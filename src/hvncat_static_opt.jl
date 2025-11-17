@@ -206,7 +206,10 @@ function extract_hvncat_elements(op_name::Symbol, args)
     elseif op_name in [:typed_hvncat]
         # Skip type and dims and row_first
         return args[4:end]
-    elseif op_name in [:typed_hcat, :typed_vcat, :array_literal]
+    elseif op_name in [:array_literal]
+        # Skip dims
+        return args[2:end]
+    elseif op_name in [:typed_hcat, :typed_vcat]
         # Skip type
         return args[2:end]
     end
