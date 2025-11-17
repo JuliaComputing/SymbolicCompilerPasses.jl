@@ -1,14 +1,3 @@
-# Optimization pass to convert hvncat (literal array construction) to StaticArrays
-# Detects array literals like [1 2; 3 4] and converts to SMatrix when small enough
-
-# using ..Code
-# import ..SymbolicUtils as SU
-# import ..SymbolicUtils: BasicSymbolic, iscall, issym, operation, arguments,
-#                         maketerm, metadata, symtype, Const, Term, Sym
-
-# # Reuse infrastructure from matmuladd.jl
-# include("matmuladd.jl")
-
 """
     HvncatMatch <: AbstractMatched
 
@@ -420,38 +409,6 @@ const HVNCAT_STATIC_RULE = OptimizationRule(
     20  # Very high priority - run first
 )
 
-# """
-#     apply_hvncat_static_optimization(expr::Code.Let, state::Code.CSEState) -> Code.Let
-
-# Apply hvncat-to-StaticArray optimization to the given IR.
-
-# This is a convenience function that applies the HVNCAT_STATIC_RULE.
-
-# # Example
-
-# ```julia
-# using StaticArrays
-
-# @syms x y z
-
-# # Literal array construction
-# expr = [x y; y z]
-
-# ir = Code.cse(expr)
-# state = Code.CSEState()
-# optimized_ir = apply_hvncat_static_optimization(ir, state)
-
-# # Generated code will use SMatrix{2,2} instead of Matrix
-# ```
-# """
-# function apply_hvncat_static_optimization(expr::Code.Let, state::Code.CSEState)
-#     match_data = detect_hvncat_pattern(expr, state)
-#     if match_data !== nothing
-#         return transform_hvncat_to_static(expr, match_data, state)
-#     end
-#     return expr
-# end
-
 function literal_static_opt(expr, state::CSEState)
 
     # Try to apply optimization rules
@@ -463,8 +420,3 @@ function literal_static_opt(expr, state::CSEState)
     # If no optimization applied, return original expression
     return expr
 end
-
-
-# Export public API
-# export HVNCAT_STATIC_RULE, apply_hvncat_static_optimization,
-#        is_hvncat, is_small_hvncat
