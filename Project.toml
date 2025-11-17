@@ -15,6 +15,7 @@ SymbolicUtils = {url = "https://github.com/DhairyaLGandhi/SymbolicUtils.jl", rev
 LinearAlgebra = "1.11.0"
 PreallocationTools = "0.4.34"
 SymbolicUtils = "4.1.0"
+julia = "1.11"
 
 [extras]
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
