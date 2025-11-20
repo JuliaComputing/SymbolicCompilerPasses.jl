@@ -4,13 +4,13 @@
 Represents a detected hvncat operation that should be converted to StaticArray.
 """
 struct HvncatMatch{V, E, D, DA, T} <: AbstractMatched
-    lhs_var::V                      # Variable being assigned
-    hvncat_expr::E                  # The hvncat call
-    dims::D                         # Inferred dimensions (rows, cols)
-    dims_arg::DA                    # Original dims argument from hvncat
-    elements::T                     # Flattened elements
-    assignment::Code.Assignment     # Original assignment
-    assignment_idx::Int             # Index in IR
+    lhs_var::V
+    hvncat_expr::E
+    dims::D
+    dims_arg::DA
+    elements::T
+    assignment::Code.Assignment
+    assignment_idx::Int
     pattern::String
 end
 
@@ -20,12 +20,6 @@ end
 Check if an operation is an array concatenation operation.
 Uses dispatch on the function type for type-safe checking.
 """
-is_literal_construct_op(::typeof(Base.hvncat)) = true
-is_literal_construct_op(::typeof(Base.hcat)) = true
-is_literal_construct_op(::typeof(Base.vcat)) = true
-is_literal_construct_op(::typeof(Base.typed_hvncat)) = true
-is_literal_construct_op(::typeof(Base.typed_hcat)) = true
-is_literal_construct_op(::typeof(Base.typed_vcat)) = true
 is_literal_construct_op(::typeof(SymbolicUtils.array_literal)) = true
 is_literal_construct_op(::typeof(SymbolicUtils.Code.create_array)) = true
 is_literal_construct_op(::MakeArray) = true
@@ -40,7 +34,6 @@ This is what Julia uses for array literals like [1 2; 3 4].
 function is_hvncat(expr)
     iscall(expr) || return false
     op = operation(expr)
-    @show op
     return is_literal_construct_op(op)
 end
 is_hvncat(::AbstractArray) = true
@@ -54,10 +47,8 @@ arguments(x::AbstractArray) = [SymbolicUtils.Code.create_array, size(x), x]
 Extract the dimension argument from concatenation operation arguments.
 Dispatches on operation type for type-safe extraction.
 """
-get_dims_arg(::typeof(Base.hvncat), args) = length(args) >= 1 ? args[1] : nothing
-get_dims_arg(::typeof(Base.typed_hvncat), args) = length(args) >= 2 ? args[2] : nothing
 get_dims_arg(::typeof(SymbolicUtils.array_literal), args) = args[1]
-# get_dims_arg(::typeof(SymbolicUtils.Code.create_array), args) = args[2]
+get_dims_arg(::typeof(SymbolicUtils.Code.create_array), args) = args[2]
 get_dims_arg(::Any, args) = nothing  # hcat/vcat don't have explicit dims arguments
 
 """
@@ -85,37 +76,6 @@ function resolve_dims_argument(dims_arg, expr::Code.Let)
     return dims_arg
 end
 
-"""
-    extract_tuple_elements(tuple_expr) -> Union{Nothing, Vector}
-
-Extract elements from a tuple expression.
-Handles both literal tuples and Const-wrapped tuples.
-"""
-function extract_tuple_elements(tuple_expr)
-    SymbolicUtils.isconst(tuple_expr) && return tuple_expr
-
-    # Check if it's a call to tuple constructor
-    if iscall(tuple_expr) && operation(tuple_expr) === tuple
-        return arguments(tuple_expr)
-    end
-
-    # Check if it's a Const wrapping a tuple
-    if iscall(tuple_expr)
-        op = operation(tuple_expr)
-        if op isa Type && op <: Const
-            const_val = arguments(tuple_expr)[1]
-            if const_val isa Tuple
-                return collect(const_val)
-            end
-        end
-    end
-
-    return nothing
-end
-
-extract_tuple_elements(n::Tuple{M}) where {M} = (n..., 1)
-extract_tuple_elements(n::Tuple{M,N}) where {M,N} = n
-
 function unalias(var, expr::Code.Let)
     if issym(var)
         for p in expr.pairs
@@ -127,12 +87,8 @@ function unalias(var, expr::Code.Let)
 end
 
 function infer_hvncat_dimensions(::typeof(SymbolicUtils.array_literal), args, expr::Code.Let)
-    @show args
     dims_arg = get_dims_arg(SymbolicUtils.array_literal, args)
-    @show dims_arg
     val = unalias(dims_arg, expr)
-    @show val
-    # nothing
 end
 
 function infer_hvncat_dimensions(::typeof(SymbolicUtils.Code.create_array), args, expr::Code.Let)
@@ -146,12 +102,6 @@ infer_hvncat_dimensions(::Any, args, expr::Code.Let) = nothing
 Extract the element values from concatenation operation arguments.
 Dispatches on operation type for type-safe extraction.
 """
-extract_hvncat_elements(::typeof(Base.hvncat), args) = args[3:end]
-extract_hvncat_elements(::typeof(Base.hcat), args) = args
-extract_hvncat_elements(::typeof(Base.vcat), args) = args
-extract_hvncat_elements(::typeof(Base.typed_hvncat), args) = args[4:end]
-extract_hvncat_elements(::typeof(Base.typed_hcat), args) = args[2:end]
-extract_hvncat_elements(::typeof(Base.typed_vcat), args) = args[2:end]
 extract_hvncat_elements(::typeof(SymbolicUtils.array_literal), args) = args[2:end]
 extract_hvncat_elements(::typeof(SymbolicUtils.Code.create_array), args) = vec(args[3])
 extract_hvncat_elements(::Any, args) = []
