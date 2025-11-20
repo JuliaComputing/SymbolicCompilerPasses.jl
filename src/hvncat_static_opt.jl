@@ -15,6 +15,23 @@ struct HvncatMatch{V, E, D, DA, T} <: AbstractMatched
 end
 
 """
+    is_literal_construct_op(op) -> Bool
+
+Check if an operation is an array concatenation operation.
+Uses dispatch on the function type for type-safe checking.
+"""
+is_literal_construct_op(::typeof(Base.hvncat)) = true
+is_literal_construct_op(::typeof(Base.hcat)) = true
+is_literal_construct_op(::typeof(Base.vcat)) = true
+is_literal_construct_op(::typeof(Base.typed_hvncat)) = true
+is_literal_construct_op(::typeof(Base.typed_hcat)) = true
+is_literal_construct_op(::typeof(Base.typed_vcat)) = true
+is_literal_construct_op(::typeof(SymbolicUtils.array_literal)) = true
+is_literal_construct_op(::typeof(SymbolicUtils.Code.create_array)) = true
+is_literal_construct_op(::MakeArray) = true
+is_literal_construct_op(x) = false
+
+"""
     is_hvncat(expr) -> Bool
 
 Check if an expression is an hvncat (horizontal-vertical-n-concatenation) operation.
@@ -22,17 +39,26 @@ This is what Julia uses for array literals like [1 2; 3 4].
 """
 function is_hvncat(expr)
     iscall(expr) || return false
-
     op = operation(expr)
-
-    # Check for hvncat or related array construction operations
-    # hvncat is the general form: hvncat(dims, row_first, values...)
-    # Also check for hcat, vcat which are simpler forms
-    op_name = op isa SymbolicUtils.Mapreducer ? :identity : nameof(op)
-
-
-    return op_name in [:hvncat, :hcat, :vcat, :typed_hvncat, :typed_hcat, :typed_vcat, :array_literal]
+    @show op
+    return is_literal_construct_op(op)
 end
+is_hvncat(::AbstractArray) = true
+
+operation(::AbstractArray) = SymbolicUtils.Code.create_array
+arguments(x::AbstractArray) = [SymbolicUtils.Code.create_array, size(x), x]
+
+"""
+    get_dims_arg(op, args) -> Union{Nothing, Any}
+
+Extract the dimension argument from concatenation operation arguments.
+Dispatches on operation type for type-safe extraction.
+"""
+get_dims_arg(::typeof(Base.hvncat), args) = length(args) >= 1 ? args[1] : nothing
+get_dims_arg(::typeof(Base.typed_hvncat), args) = length(args) >= 2 ? args[2] : nothing
+get_dims_arg(::typeof(SymbolicUtils.array_literal), args) = args[1]
+# get_dims_arg(::typeof(SymbolicUtils.Code.create_array), args) = args[2]
+get_dims_arg(::Any, args) = nothing  # hcat/vcat don't have explicit dims arguments
 
 """
     resolve_dims_argument(dims_arg, expr::Code.Let) -> Union{Nothing, Any}
@@ -66,11 +92,8 @@ Extract elements from a tuple expression.
 Handles both literal tuples and Const-wrapped tuples.
 """
 function extract_tuple_elements(tuple_expr)
-    @show tuple_expr
-    @show typeof(tuple_expr)
-    # @show arguments(tuple_expr)
-    # @show operation(tuple_expr)
     SymbolicUtils.isconst(tuple_expr) && return tuple_expr
+
     # Check if it's a call to tuple constructor
     if iscall(tuple_expr) && operation(tuple_expr) === tuple
         return arguments(tuple_expr)
@@ -93,128 +116,45 @@ end
 extract_tuple_elements(n::Tuple{M}) where {M} = (n..., 1)
 extract_tuple_elements(n::Tuple{M,N}) where {M,N} = n
 
-"""
-    infer_hvncat_dimensions(op_name::Symbol, args, expr::Code.Let) -> Union{Nothing, Tuple{Int,Int}}
-
-Infer dimensions from hvncat/hcat/vcat operation.
-
-Returns (rows, cols) or nothing if dimensions cannot be determined.
-
-The expr parameter is needed to resolve aliased dimension arguments.
-"""
-function infer_hvncat_dimensions(op_name::Symbol, args, expr::Code.Let)
-    if op_name == :hvncat
-        # hvncat format: hvncat(dims, row_first, values...)
-        # dims is a tuple like (2, 3) for 2 rows, 3 cols per row
-        # row_first is Bool indicating layout
-
-        length(args) >= 3 || return nothing
-
-        dims_arg = args[1]
-        row_first_arg = args[2]
-        values = args[3:end]
-
-        # Resolve alias if dims_arg is a CSE variable
-        resolved_dims = resolve_dims_argument(dims_arg, expr)
-
-        @show dims_arg, resolved_dims
-        # resolved_dims !== nothing && return resolved_dims
-        # Try to extract tuple elements
-        dim_elements = extract_tuple_elements(resolved_dims)
-        @show typeof(resolved_dims)
-        # @show Main.@which extract_tuple_elements(resolved_dims)
-        @show dim_elements
-
-        if dim_elements !== nothing && length(dim_elements) >= 1
-            # Extract dimension values
-            # Could be (n,) for vector or (m, n) for matrix
-            dims = []
-            for elem in dim_elements
-                if elem isa Integer
-                    push!(dims, elem)
-                elseif iscall(elem) && operation(elem) isa Type && operation(elem) <: Const
-                    # Const-wrapped integer
-                    val = arguments(elem)[1]
-                    if val isa Integer
-                        push!(dims, val)
-                    else
-                        # return nothing
-                    end
-                else
-                    # return nothing
-                end
-            end
-
-            @show dims
-            if length(dims) == 1
-                # Vector case: (n,) means n rows, 1 column
-                return (dims[1], 1)
-            elseif length(dims) == 2
-                # Matrix case: (m, n)
-                return (dims[1], dims[2])
+function unalias(var, expr::Code.Let)
+    if issym(var)
+        for p in expr.pairs
+            if lhs(p) === var
+                return iscall(p) ? nothing : rhs(p)
             end
         end
-
-    elseif op_name == :hcat
-        # hcat concatenates horizontally: [a b c] -> hcat(a, b, c)
-        # Result is 1 row, N cols
-        return (1, length(args))
-
-    elseif op_name == :vcat
-        # vcat concatenates vertically: [a; b; c] -> vcat(a, b, c)
-        # Result is N rows, 1 col
-        return (length(args), 1)
-
-    elseif op_name == :typed_hvncat
-        # typed_hvncat(T, dims, row_first, values...)
-        length(args) >= 4 || return nothing
-        dims_arg = args[2]
-
-        if iscall(dims_arg) && operation(dims_arg) === tuple
-            dim_values = arguments(dims_arg)
-            if length(dim_values) == 2
-                if all(d -> d isa Integer, dim_values)
-                    return (dim_values[1], dim_values[2])
-                end
-            end
-        end
-
-    elseif op_name == :typed_hcat
-        # typed_hcat(T, values...)
-        return (1, length(args) - 1)
-
-    elseif op_name == :typed_vcat
-        # typed_vcat(T, values...)
-        return (length(args) - 1, 1)
     end
-
-    return nothing
 end
 
-"""
-    extract_hvncat_elements(op_name::Symbol, args) -> Vector
-
-Extract the element values from hvncat/hcat/vcat arguments.
-"""
-function extract_hvncat_elements(op_name::Symbol, args)
-    if op_name in [:hvncat]
-        # Skip dims and row_first, return values
-        return args[3:end]
-    elseif op_name in [:hcat, :vcat]
-        # All args are elements
-        return args
-    elseif op_name in [:typed_hvncat]
-        # Skip type and dims and row_first
-        return args[4:end]
-    elseif op_name in [:array_literal]
-        # Skip dims
-        return args[2:end]
-    elseif op_name in [:typed_hcat, :typed_vcat]
-        # Skip type
-        return args[2:end]
-    end
-    return []
+function infer_hvncat_dimensions(::typeof(SymbolicUtils.array_literal), args, expr::Code.Let)
+    @show args
+    dims_arg = get_dims_arg(SymbolicUtils.array_literal, args)
+    @show dims_arg
+    val = unalias(dims_arg, expr)
+    @show val
+    # nothing
 end
+
+function infer_hvncat_dimensions(::typeof(SymbolicUtils.Code.create_array), args, expr::Code.Let)
+    args[2]
+end
+infer_hvncat_dimensions(::Any, args, expr::Code.Let) = nothing
+
+"""
+    extract_hvncat_elements(op, args) -> Vector
+
+Extract the element values from concatenation operation arguments.
+Dispatches on operation type for type-safe extraction.
+"""
+extract_hvncat_elements(::typeof(Base.hvncat), args) = args[3:end]
+extract_hvncat_elements(::typeof(Base.hcat), args) = args
+extract_hvncat_elements(::typeof(Base.vcat), args) = args
+extract_hvncat_elements(::typeof(Base.typed_hvncat), args) = args[4:end]
+extract_hvncat_elements(::typeof(Base.typed_hcat), args) = args[2:end]
+extract_hvncat_elements(::typeof(Base.typed_vcat), args) = args[2:end]
+extract_hvncat_elements(::typeof(SymbolicUtils.array_literal), args) = args[2:end]
+extract_hvncat_elements(::typeof(SymbolicUtils.Code.create_array), args) = vec(args[3])
+extract_hvncat_elements(::Any, args) = []
 
 """
     is_small_hvncat(rows::Int, cols::Int) -> Bool
@@ -245,45 +185,29 @@ function detect_hvncat_pattern(expr::Code.Let, state::Code.CSEState)
         rhs_expr = rhs(pair)
         lhs_var = lhs(pair)
 
-        @show is_hvncat(rhs_expr)
-
         # Check if this is an hvncat-like operation
         is_hvncat(rhs_expr) || continue
 
         op = operation(rhs_expr)
-        op_name = nameof(op)
-        @show op_name
         args = arguments(rhs_expr)
 
-        # Extract the original dims argument
-        dims_arg = if op_name == :hvncat
-            args[1]  # For hvncat, dims is the first argument
-        elseif op_name == :typed_hvncat
-            args[2]  # For typed_hvncat, dims is the second argument (after type)
-        elseif op_name == :array_literal
-            args[1]
-        else
-            nothing  # hcat/vcat don't have explicit dims arguments
-        end
+        # Extract the original dims argument using dispatch
+        dims_arg = get_dims_arg(op, args)
 
-        # Infer dimensions (pass expr to resolve aliases)
-        dims = infer_hvncat_dimensions(op_name, args, expr)
-        @show dims
-
-        dims = (3, 1)
+        # Infer dimensions using dispatch
+        dims = infer_hvncat_dimensions(op, args, expr)
+        dims = length(dims) == 1 ? (dims[1], 1) : dims
         dims === nothing && continue
-        @show dims
 
         # Check if small enough for StaticArrays
-        is_small_hvncat(dims[1], dims[2]) || continue
-        # error()
+        # is_small_hvncat(dims[1], dims[2]) || continue
 
-        # Extract elements
-        elements = extract_hvncat_elements(op_name, args)
+        # Extract elements using dispatch
+        elements = extract_hvncat_elements(op, args)
 
         # Verify we have the right number of elements
         expected_count = dims[1] * dims[2]
-        length(elements) == expected_count || continue
+        # length(elements) == expected_count || continue
 
         push!(matches, HvncatMatch(
             lhs_var,
@@ -296,8 +220,6 @@ function detect_hvncat_pattern(expr::Code.Let, state::Code.CSEState)
             "hvncat literal: $(dims[1])×$(dims[2])"
         ))
     end
-
-    @show matches
 
     isempty(matches) ? nothing : matches
 end
@@ -316,7 +238,6 @@ transform_hvncat_to_static(expr, ::Nothing, state::Code.CSEState) = expr
 function transform_hvncat_to_static(expr::Code.Let, match_data::Vector{HvncatMatch},
                                    state::Code.CSEState)
     isempty(match_data) && return expr
-    @show match_data
 
     # Build transformation plan
     transformations = Dict{Int, Code.Assignment}()
@@ -328,59 +249,25 @@ function transform_hvncat_to_static(expr::Code.Let, match_data::Vector{HvncatMat
         elements = match.elements
         T = vartype(lhs_var)
 
-        @show dims
-        @show dims_arg
-
-        # Create StaticArray constructor using dims_arg directly
-        # Extract dimension expressions from dims_arg
-        # if dims_arg !== nothing
-        if dims == nothing
-            # Use getindex to extract dimensions: dims_arg[1], dims_arg[2], etc.
-            dim1_expr = maketerm(typeof(dims_arg[1]), getindex, [dims_arg, 1], nothing)
-
-            if dims[2] == 1
-                # Column vector: SVector{dims_arg[1]}(elements...)
-                static_ctor = Term{T}(
-                    maketerm(Type{StaticArrays.SVector}, StaticArrays.SVector, [dim1_expr], nothing),
-                    elements;
-                    type=symtype(lhs_var)
-                )
-            else
-                # Matrix or row vector: SMatrix{dims_arg[1], dims_arg[2]}(elements...)
-                dim2_expr = maketerm(typeof(dims_arg[2]), getindex, [dims_arg, 2], nothing)
-                static_ctor = Term{T}(
-                    maketerm(Type{StaticArrays.SMatrix}, StaticArrays.SMatrix, [dim1_expr, dim2_expr], nothing),
-                    elements;
-                    type=symtype(lhs_var)
-                )
-            end
+        # Fallback: use literal dims values for hcat/vcat cases
+        if length(dims) == 2 && dims[2] == 1
+            # Column vector: SVector{n}(elements...)
+            n = dims[1]
+            t = term(Core.apply_type, StaticArrays.SVector, n; type = Any)
+            static_ctor = Term{T}(
+                t,
+                elements;
+                type=symtype(lhs_var)
+            )
         else
-            # Fallback: use literal dims values for hcat/vcat cases
-            if dims[2] == 1
-                # Column vector: SVector{n}(elements...)
-                n = dims[1]
-                static_ctor = Term{T}(
-                    StaticArrays.SVector{n},
-                    elements;
-                    type=symtype(lhs_var)
-                )
-            elseif dims[1] == 1
-                # Row vector: treat as SMatrix{1,n}
-                n = dims[2]
-                static_ctor = Term{T}(
-                    StaticArrays.SMatrix{1, n},
-                    elements;
-                    type=symtype(lhs_var)
-                )
-            else
-                # Matrix: SMatrix{m,n}(elements...)
-                m, n = dims
-                static_ctor = Term{T}(
-                    StaticArrays.SMatrix{m, n},
-                    elements;
-                    type=symtype(lhs_var)
-                )
-            end
+            # Matrix: SMatrix{m,n}(elements...)
+            m, n = dims
+            t = term(Core.apply_type, StaticArrays.SMatrix, m, n; type = Any)
+            static_ctor = Term{T}(
+                t,
+                elements;
+                type=symtype(lhs_var)
+            )
         end
 
         new_assignment = Assignment(lhs_var, static_ctor)
@@ -413,7 +300,6 @@ const HVNCAT_STATIC_RULE = OptimizationRule(
 )
 
 function literal_static_opt(expr, state::CSEState)
-
     # Try to apply optimization rules
     optimized = apply_optimization_rules(expr, state, HVNCAT_STATIC_RULE)
     if optimized !== nothing
