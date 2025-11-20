@@ -169,10 +169,12 @@ function transform_to_ldiv_inplace(expr::Code.Let, match_data::Union{Nothing, Ve
             type=Code.symtype(A)
         )
 
+        B_cache = Term{T}(get_from_cache, [B]; type=symtype(B))
+
         # Create: result = ldiv!(A, B)
         ldiv_call = Term{T}(
             LinearAlgebra.ldiv!,
-            [qr_A, B];
+            [qr_A, B_cache];
             type=Code.symtype(B)
         )
 

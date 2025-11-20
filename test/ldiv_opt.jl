@@ -22,17 +22,16 @@ function test_ldiv(expr, args...)
     N = 16
     a = randn(M, M)
     b = randn(M, N)
-    # current_f(a, b) ≈ optimized_f(a, b)
 
     current_o = @invokelatest current_f(a, b)
     optimized_o = @invokelatest optimized_f(a, b)
     @test isapprox(current_o, optimized_o, rtol=1e-10, atol=1e-10)
 end
 
-@testset "LDiv Factorization" begin
+# @testset "LDiv Factorization" begin
     expr = A \ B
-    @test test_ldiv(expr, A, B)
+    test_ldiv(expr, A, B)
 
     # expr2 = C + (A \ B)
     # @test test_ldiv(expr2, A, B, C)
-end
+# end
