@@ -5,8 +5,6 @@ import SymbolicCompilerPasses as SC
 using LinearAlgebra
 using Test
 
-@syms A[1:3, 1:3] B[1:3, 1:2] C[1:3, 1:3]
-
 function test_ldiv(expr, args...)
 
     current = SU.Code.cse(expr)
@@ -28,10 +26,12 @@ function test_ldiv(expr, args...)
     @test isapprox(current_o, optimized_o, rtol=1e-10, atol=1e-10)
 end
 
-# @testset "LDiv Factorization" begin
+@testset "LDiv Factorization" begin
+    @syms A[1:3, 1:3] B[1:3, 1:2] C[1:3, 1:3]
+
     expr = A \ B
     test_ldiv(expr, A, B)
 
     # expr2 = C + (A \ B)
     # @test test_ldiv(expr2, A, B, C)
-# end
+end
