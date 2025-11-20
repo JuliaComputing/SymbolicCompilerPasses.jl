@@ -22,7 +22,7 @@ using Test
     r = rand(3)
     literal_vec_alloc = @allocated literal_vec_f(r...)
     # static_vec_alloc = @allocated static_vec_f(r...)
-    # @test literal_vec_alloc < static_vec_alloc
+    # @test static_vec_alloc < literal_vec_alloc
 
     @syms myx[1:2, 1:2]
     literal_mat_expr = Func([myx[1, 1], myx[2, 1], myx[1, 2], myx[2, 2]], [],
@@ -43,5 +43,5 @@ using Test
     r2 = rand(2, 2)
     literal_mat_alloc = @allocated literal_mat_f(r2[1, 1], r2[2, 1], r2[1, 2], r2[2, 2])
     static_mat_alloc = @allocated static_mat_f(r2)
-    @test literal_mat_alloc < static_mat_alloc
+    @test static_mat_alloc < literal_mat_alloc
 end
