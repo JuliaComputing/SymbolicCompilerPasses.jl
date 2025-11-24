@@ -1,4 +1,4 @@
-FACTORIZATION_CACHE = WeakKeyDict()
+const FACTORIZATION_CACHE = WeakKeyDict()
 
 struct LdivMatch{Ta, Tb, S <: Assignment, P <: AbstractString} <: AbstractMatched
     A::Ta
