@@ -40,7 +40,11 @@ using Test
     static_mat_f = eval(toexpr(static_mat_expr))
     literal_mat_f = eval(toexpr(literal_mat_expr))
 
+    # throwaway for allocation test
     r2 = rand(2, 2)
+    literal_mat_f(r2[1, 1], r2[2, 1], r2[1, 2], r2[2, 2])
+    static_mat_f(r2)
+    
     literal_mat_alloc = @allocated literal_mat_f(r2[1, 1], r2[2, 1], r2[1, 2], r2[2, 2])
     static_mat_alloc = @allocated static_mat_f(r2)
     @test static_mat_alloc < literal_mat_alloc
