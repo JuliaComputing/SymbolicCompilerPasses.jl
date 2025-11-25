@@ -37,7 +37,8 @@ function detect_ldiv_pattern(expr::Code.Let, state::Code.CSEState)
         LdivMatch(A, B, candidate, idx, "A \\ B")
     end
 
-    isempty(matches) ? nothing : filter(!isnothing, matches)
+    f = filter(!isnothing, matches)
+    isempty(f) ? nothing : f
 end
 
 """
@@ -65,15 +66,7 @@ end
 Count how many times `var` is used after `after_idx` in the IR.
 """
 function count_uses_after(var, expr::Code.Let, after_idx::Int)
-    count = 0
-    
-    for p in expr.pairs[(after_idx + 1):end]
-        rhs_expr = rhs(p)
-        count += count_occurrences(var, rhs_expr)
-    end
-    count += count_occurrences(var, expr.body)
-
-    return count
+    count_occurrences(var, expr.pairs[(after_idx + 1):end]) + count_occurrences(var, expr.body)
 end
 
 """
@@ -81,11 +74,32 @@ end
 
 Recursively count occurrences of `target` in `expr`.
 """
-function count_occurrences(target, expr)
-    target === expr && return 1
-    iscall(expr) || return 0
-    return sum(arg -> count_occurrences(target, arg), arguments(expr))
+function count_occurrences(target, expr::Code.Let)
+    count_occurrences(target, expr.pairs) + count_occurrences(target, expr.body)
 end
+
+function count_occurrences(target, expr::Code.Assignment)
+    count_occurrences(target, rhs(expr)) + count_occurrences(target, lhs(expr))
+end
+
+function count_occurrences(target, expr::AbstractVector)
+    sum(e -> count_occurrences(target, e), expr, init = 0)
+end
+
+function count_occurrences(target, expr)
+    if issym(expr)
+        (target === expr ? 1 : 0)
+    # elseif isconst(expr)
+    #     0
+    elseif iscall(expr)
+        sum(arg -> count_occurrences(target, arg), arguments(expr), init = 0)
+    else
+        0
+    end
+end
+
+count_occurrences(target, expr::Code.SetArray) = count_occurrences(target, expr.arr)
+count_occurrences(target, expr::Code.ForLoop) = count_occurrences(target, expr.body)
 
 """
     is_safe_to_optimize_ldiv(match::LdivMatch, expr::Code.Let) -> Bool
@@ -143,10 +157,7 @@ Transform `result = A \\ B` to:
 
 This performs in-place linear solve, overwriting B with the result.
 """
-function transform_to_ldiv_inplace(expr::Code.Let, match_data::Union{Nothing, Vector}, state::Code.CSEState)
-    match_data === nothing && return expr
-    isempty(match_data) && return expr
-
+function transform_to_ldiv_inplace(expr::Code.Let, match_data::AbstractVector, state::Code.CSEState)
     # Validate all matches
     safe_matches = filter(match_data) do match
         is_safe = is_safe_to_optimize_ldiv(match, expr)
@@ -189,6 +200,7 @@ function transform_to_ldiv_inplace(expr::Code.Let, match_data::Union{Nothing, Ve
 
     return Code.Let(new_pairs, expr.body, expr.let_block)
 end
+transform_to_ldiv_inplace(expr::Code.Let, match_data::Nothing, state::Code.CSEState) = expr
 
 # Create the optimization rule
 const LDIV_RULE = OptimizationRule(
