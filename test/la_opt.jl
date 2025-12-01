@@ -29,9 +29,6 @@ function test_triu(expr, args...)
     current_func = Func([args...], [], current)
     optimized_func = Func([args...], [], optimized)
 
-    # return toexpr(current)
-    # return toexpr(optimized)
-
     current_f = eval(toexpr(current_func))
     optimized_f = eval(toexpr(optimized_func))
 
@@ -54,7 +51,7 @@ function test_triu_without_opt(expr, args...)
     @test !has_triu_optimization(SC.triu_opt(SU.Code.cse(expr), Code.CSEState()))
 end
 
-# @testset "Triu Optimization Benchmark" begin
+@testset "Triu Optimization Benchmark" begin
     @syms A[1:3, 1:3] B[1:3, 1:3] C[1:3, 1:3]
 
     expr = LinearAlgebra.triu(A) + B
@@ -78,4 +75,4 @@ end
 
     expr7 = LinearAlgebra.triu(A) + A
     test_triu_without_opt(expr7, A)
-# end
+end
