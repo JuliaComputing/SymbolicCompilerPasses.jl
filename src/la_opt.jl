@@ -79,6 +79,9 @@ function GenericRule(name, f, f!, priority)
 end
 
 const TRIU_RULE = GenericRule("triu", LinearAlgebra.triu, LinearAlgebra.triu!, 8)
+const TRIL_RULE = GenericRule("tril", LinearAlgebra.tril, LinearAlgebra.tril!, 8)
+const NORMALIZE_RULE = GenericRule("normalize", LinearAlgebra.normalize, LinearAlgebra.normalize!, 8)
+# const CONJ_RULE = GenericRule("conj", LinearAlgebra.conj, LinearAlgebra.conj!, 8)
    
 function triu_opt(expr, state::CSEState)
     # Try to apply optimization rules
