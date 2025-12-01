@@ -3,10 +3,6 @@ is_orthogonal_type(::Rotations.Rotation) = true
 is_orthogonal_type(x) = false
 
 
-# ie = SU.Code.IfElse(SU.Const{SymReal}(true), SU.Code.Let([], nothing, false), SU.Code.Let([], nothing, false))
-# ie = SU.Code.IfElse(is_orthogonal, SU.Code.Let([], nothing, false), SU.Code.Let([], nothing, false))
-# toexpr(ie)
-
 function detect_orthogonal_matrix(expr, state::Code.CSEState)
     orthogonal_candidates_idx = findall(expr.pairs) do x
         r = rhs(x)
@@ -33,3 +29,4 @@ function detect_orthogonal_matrix(expr, state::Code.CSEState)
     f = filter(!isnothing, matches)
     isempty(f) ? nothing : f
 end
+
