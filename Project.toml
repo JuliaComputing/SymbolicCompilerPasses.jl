@@ -9,12 +9,19 @@ PreallocationTools = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 
 [sources]
-SymbolicUtils = {url = "https://github.com/DhairyaLGandhi/SymbolicUtils.jl", rev = "dg/opt_api"}
+SymbolicUtils = {rev = "dg/opt_api", url = "https://github.com/DhairyaLGandhi/SymbolicUtils.jl"}
+
+[weakdeps]
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
+
+[extensions]
+SymbolicCompilerPassesSymbolicsExt = ["Symbolics", "LinearAlgebra"]
 
 [compat]
 LinearAlgebra = "1.11.0"
 PreallocationTools = "0.4.34"
 SymbolicUtils = "4.1.0"
+Symbolics = "6, 7.1.1"
 julia = "1.11"
 
 [extras]
