@@ -1,11 +1,7 @@
 module SymbolicCompilerPassesRotationsExt
 
 using SymbolicCompilerPasses
-using SymbolicUtils
-using Rotations
-using LinearAlgebra
-
-
-include("rotations_opt.jl")
+import SymbolicCompilerPasses: is_orthogonal_type
+is_orthogonal_type(::Rotations.Rotation) = true
 
 end

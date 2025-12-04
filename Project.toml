@@ -18,7 +18,7 @@ Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
 SymbolicCompilerPassesRotationsExt = ["Rotations",]
 
 [compat]
-LinearAlgebra = "1.11.0"
+LinearAlgebra = "1.11.0, 1.10"
 PreallocationTools = "0.4.34"
 Rotations = "1.7.1"
 SymbolicUtils = "4.1.0"

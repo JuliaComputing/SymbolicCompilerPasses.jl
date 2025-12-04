@@ -3,9 +3,9 @@ module SymbolicCompilerPasses
 using LinearAlgebra
 using PreallocationTools
 using SymbolicUtils
-import SymbolicUtils: symtype, vartype, Sym, BasicSymbolic, Term, iscall, operation, arguments, maketerm, Const
+import SymbolicUtils: symtype, vartype, Sym, BasicSymbolic, Term, iscall, operation, arguments, maketerm, Const, search_variables!, search_variables, issym, iscall, isterm
 import SymbolicUtils.Code: Code, OptimizationRule, substitute_in_ir, apply_optimization_rules, AbstractMatched,
-    Assignment, CSEState, lhs, rhs, apply_substitution_map
+    Assignment, CSEState, lhs, rhs, apply_substitution_map, IfElse
 
 function bank(dic, key, value)
     if haskey(dic, key)
@@ -16,5 +16,6 @@ function bank(dic, key, value)
 end
 
 include("matmuladd.jl")
+include("ortho_inv_opt.jl")
 
 end # module SymbolicCompilerPasses
