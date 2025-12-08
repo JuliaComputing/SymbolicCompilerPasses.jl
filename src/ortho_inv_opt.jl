@@ -1,5 +1,4 @@
 is_orthogonal_matrix(A) = A * A' ≈ I(size(A, 1))
-# is_orthogonal_type(::Rotations.Rotation) = true
 is_orthogonal_type(x) = begin
     if issym(x)
         return getmetadata(x, IsOrthogonal, false)
