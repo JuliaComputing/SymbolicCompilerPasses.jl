@@ -87,11 +87,13 @@ function count_occurrences(target, expr::AbstractVector)
 end
 
 function count_occurrences(target, expr)
+    target = unwrap(target)
+    expr = unwrap(expr)
     if issym(expr)
-        unwrap(target) === unwrap(expr) ? 1 : 0
+        target === expr ? 1 : 0
     elseif iscall(expr)
-        issame = unwrap(target) === unwrap(expr) ? 1 : 0
-        issame + sum(arg -> count_occurrences(unwrap(target), arg), unwrap.(arguments(expr)), init = 0)
+        issame = target === expr ? 1 : 0
+        issame + sum(arg -> count_occurrences(target, arg), unwrap.(arguments(expr)), init = 0)
     else
         0
     end
