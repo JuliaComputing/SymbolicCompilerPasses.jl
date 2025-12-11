@@ -75,11 +75,11 @@ end
 Recursively count occurrences of `target` in `expr`.
 """
 function count_occurrences(target, expr::Code.Let)
-    count_occurrences(target, expr.pairs) + count_occurrences(target, expr.body)
+    count_occurrences(unwrap(target), expr.pairs) + count_occurrences(unwrap(target), expr.body)
 end
 
 function count_occurrences(target, expr::Code.Assignment)
-    count_occurrences(target, rhs(expr)) + count_occurrences(target, lhs(expr))
+    count_occurrences(unwrap(target), rhs(expr)) + count_occurrences(unwrap(target), lhs(expr))
 end
 
 function count_occurrences(target, expr::AbstractVector)
@@ -88,9 +88,10 @@ end
 
 function count_occurrences(target, expr)
     if issym(expr)
-        getname(unwrap(target)) === getname(unwrap(expr))
+        unwrap(target) === unwrap(expr) ? 1 : 0
     elseif iscall(expr)
-        sum(arg -> count_occurrences(target, arg), unwrap.(arguments(expr)), init = 0) + count_occurrences(target, operation(expr))
+        issame = unwrap(target) === unwrap(expr) ? 1 : 0
+        issame + sum(arg -> count_occurrences(unwrap(target), arg), unwrap.(arguments(expr)), init = 0)
     else
         0
     end
