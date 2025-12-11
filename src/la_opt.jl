@@ -6,7 +6,7 @@ function search_variables!(buf, expr::Code.Let)
     union!(buf, setdiff(rhs_buf, lhs_buf))
 end
 
-function detect_triu(expr, f, state)
+function detect_f(expr, f, state)
     args = search_variables(expr)
     arg_counts = Dict(arg => count_occurrences(arg, expr) for arg in args)
     triu_candidates_idx = findall(expr.pairs) do x
@@ -47,8 +47,8 @@ struct TriuMatched{Ta, S} <: Code.AbstractMatched
     idx::Int
 end
 
-transform_triu(expr, f!, ::Nothing, state) = expr
-function transform_triu(expr, f!, matches, state)
+transform_f(expr, f!, ::Nothing, state) = expr
+function transform_f(expr, f!, matches, state)
 
     new_pairs = []
     transformed_idxs = getproperty.(matches, :idx)
@@ -72,8 +72,8 @@ end
 function GenericRule(name, f, f!, priority)
     OptimizationRule(
         name,
-        (expr, state) -> detect_triu(expr, f, state),
-        (expr, matches, state) -> transform_triu(expr, f!, matches, state),
+        (expr, state) -> detect_f(expr, f, state),
+        (expr, matches, state) -> transform_f(expr, f!, matches, state),
         priority
     )
 end
