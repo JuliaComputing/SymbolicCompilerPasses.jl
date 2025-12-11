@@ -88,11 +88,9 @@ end
 
 function count_occurrences(target, expr)
     if issym(expr)
-        (target === expr ? 1 : 0)
-    # elseif isconst(expr)
-    #     0
+        getname(unwrap(target)) === getname(unwrap(expr))
     elseif iscall(expr)
-        sum(arg -> count_occurrences(target, arg), arguments(expr), init = 0)
+        sum(arg -> count_occurrences(target, arg), unwrap.(arguments(expr)), init = 0) + count_occurrences(target, operation(expr))
     else
         0
     end
