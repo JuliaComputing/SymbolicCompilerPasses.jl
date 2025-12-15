@@ -113,8 +113,9 @@ Check if the hvncat dimensions are small enough for StaticArrays.
 Limit to 4×4 (16 elements) for optimal performance.
 """
 function is_small_hvncat(rows::Int, cols::Int)
-    return rows <= 4 && cols <= 4 && rows * cols <= 16
+    return rows * cols <= 16
 end
+is_small_hvncat(rows::Int) = rows <= 16  # For vectors
 
 """
     detect_hvncat_pattern(expr::Code.Let, state::Code.CSEState) -> Union{Nothing, Vector{HvncatMatch}}
@@ -146,17 +147,16 @@ function detect_hvncat_pattern(expr::Code.Let, state::Code.CSEState)
 
         # Infer dimensions using dispatch
         dims = Code.unwrap_const(infer_hvncat_dimensions(op, args, expr))
-        dims = length(dims) == 1 ? (dims[1], 1) : dims
         dims === nothing && continue
 
         # Check if small enough for StaticArrays
-        is_small_hvncat(dims[1], dims[2]) || continue
+        is_small_hvncat(dims...) || continue
 
         # Extract elements using dispatch
         elements = extract_hvncat_elements(op, args)
 
         # Verify we have the right number of elements
-        expected_count = dims[1] * dims[2]
+        expected_count = prod(dims)
         length(elements) == expected_count || continue
 
         push!(matches, HvncatMatch(
@@ -167,7 +167,7 @@ function detect_hvncat_pattern(expr::Code.Let, state::Code.CSEState)
             elements,
             pair,
             idx,
-            "hvncat literal: $(dims[1])×$(dims[2])"
+            "hvncat literal: $(prod(dims))"
         ))
     end
 
@@ -200,7 +200,7 @@ function transform_hvncat_to_static(expr::Code.Let, match_data::Vector{HvncatMat
         T = vartype(lhs_var)
 
         # Fallback: use literal dims values for hcat/vcat cases
-        if length(dims) == 2 && dims[2] == 1
+        if length(dims) == 1
             # Column vector: SVector{n}(elements...)
             n = dims[1]
             t = term(Core.apply_type, StaticArrays.SVector, n; type = Any)
