@@ -39,7 +39,7 @@ end
 is_hvncat(::AbstractArray) = true
 
 operation(::AbstractArray) = SymbolicUtils.Code.create_array
-arguments(x::AbstractArray) = [SymbolicUtils.Code.create_array, size(x), x]
+arguments(x::T) where T <: AbstractArray = [T, eltype(T), Val(ndims(x)), size(x), x]
 
 """
     get_dims_arg(op, args) -> Union{Nothing, Any}
@@ -48,7 +48,7 @@ Extract the dimension argument from concatenation operation arguments.
 Dispatches on operation type for type-safe extraction.
 """
 get_dims_arg(::typeof(SymbolicUtils.array_literal), args) = args[1]
-get_dims_arg(::typeof(SymbolicUtils.Code.create_array), args) = args[2]
+get_dims_arg(::typeof(SymbolicUtils.Code.create_array), args) = args[4]
 get_dims_arg(::Any, args) = nothing  # hcat/vcat don't have explicit dims arguments
 
 """
@@ -92,7 +92,7 @@ function infer_hvncat_dimensions(::typeof(SymbolicUtils.array_literal), args, ex
 end
 
 function infer_hvncat_dimensions(::typeof(SymbolicUtils.Code.create_array), args, expr::Code.Let)
-    args[2]
+    args[4]
 end
 infer_hvncat_dimensions(::Any, args, expr::Code.Let) = nothing
 
@@ -103,7 +103,7 @@ Extract the element values from concatenation operation arguments.
 Dispatches on operation type for type-safe extraction.
 """
 extract_hvncat_elements(::typeof(SymbolicUtils.array_literal), args) = args[2:end]
-extract_hvncat_elements(::typeof(SymbolicUtils.Code.create_array), args) = vec(args[3])
+extract_hvncat_elements(::typeof(SymbolicUtils.Code.create_array), args) = vec(args[5])
 extract_hvncat_elements(::Any, args) = []
 
 """
@@ -145,19 +145,19 @@ function detect_hvncat_pattern(expr::Code.Let, state::Code.CSEState)
         dims_arg = get_dims_arg(op, args)
 
         # Infer dimensions using dispatch
-        dims = infer_hvncat_dimensions(op, args, expr)
+        dims = Code.unwrap_const(infer_hvncat_dimensions(op, args, expr))
         dims = length(dims) == 1 ? (dims[1], 1) : dims
         dims === nothing && continue
 
         # Check if small enough for StaticArrays
-        # is_small_hvncat(dims[1], dims[2]) || continue
+        is_small_hvncat(dims[1], dims[2]) || continue
 
         # Extract elements using dispatch
         elements = extract_hvncat_elements(op, args)
 
         # Verify we have the right number of elements
         expected_count = dims[1] * dims[2]
-        # length(elements) == expected_count || continue
+        length(elements) == expected_count || continue
 
         push!(matches, HvncatMatch(
             lhs_var,
