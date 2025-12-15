@@ -54,6 +54,7 @@ function validate_ldiv_shapes(A, B)
     B_shape = shape(B)
 
     (A_shape isa Unknown || B_shape isa Unknown) && return false
+    (any(isa(Unknown), A_shape) || any(isa(Unknown), B_shape)) && return false
 
     # A must be square
     symtype(A) <: AbstractMatrix || return false
