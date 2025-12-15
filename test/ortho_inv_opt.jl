@@ -56,7 +56,7 @@ function check_ortho_opt(expr, A, B)
 end
 
 
-@testset "Orthogonal Matrices: inv -> transpose" begin
+# @testset "Orthogonal Matrices: inv -> transpose" begin
     @syms A[1:3, 1:3] B[1:3, 1:3] C[1:3, 1:3] D[1:3, 1:3] E[1:3, 1:3]
     Ao = SU.setmetadata(A, SC.IsOrthogonal, true)
 
@@ -72,4 +72,45 @@ end
     
     expr4 = inv(Ao * B) + B
     check_ortho_opt(expr4, A, B)
+# end
+
+
+function all_rules(mod)
+    f = filter(x -> getproperty(SC, x) isa Code.OptimizationRule, names(SC, all = true))
+    getproperty.(Ref(SC), f)
 end
+
+rules = all_rules(SC)
+
+
+expr3 = inv(A) * B * inv(Ao) + C
+
+
+ir = Code.cse(expr3)
+optimized = ir
+for rule in sort(rules, by = r -> r.priority)
+    st = SU.Code.CSEState()
+    cand = Code.apply_optimization_rules(optimized, st, rule)
+    if !isnothing(cand)
+        optimized = cand
+    end
+end
+toexpr(optimized)
+
+current_fun = Func([A, B, C], [], ir)
+optimized_fun = Func([A, B, C], [], optimized)
+
+current_f = eval(toexpr(current_fun))
+optimized_f = eval(toexpr(optimized_fun))
+
+N = 32
+a = rand(N, N)
+b = rand(N, N)
+c = rand(N, N)
+R_euler = RotMatrix{N, Float64}(rand(N, N))
+res1 = invokelatest(current_f, R_euler, b, c)
+res2 = invokelatest(optimized_f, R_euler, b, c)
+res1 ≈ res2
+
+@btime invokelatest($current_f, $a, $b, $c);
+@btime invokelatest($optimized_f, $a, $b, $c);
