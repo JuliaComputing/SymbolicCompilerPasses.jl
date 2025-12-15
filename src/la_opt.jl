@@ -26,14 +26,14 @@ function detect_f(expr, f, state)
 
     matches = map(triu_candidates_idx, triu_candidates) do idx, candidate
         A = arguments(rhs(candidate))[1]
-        TriuMatched(A, candidate, idx)
+        GenericRuleMatched(A, candidate, idx)
     end
 
     f = filter(!isnothing, matches)
     isempty(f) ? nothing : f
 end
 
-struct TriuMatched{Ta, S} <: Code.AbstractMatched
+struct GenericRuleMatched{Ta, S} <: Code.AbstractMatched
     A::Ta
     candidate::S
     idx::Int
