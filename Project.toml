@@ -11,12 +11,6 @@ SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 [sources]
 SymbolicUtils = {rev = "dg/opt_api", url = "https://github.com/DhairyaLGandhi/SymbolicUtils.jl"}
 
-[weakdeps]
-Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
-
-[extensions]
-SymbolicCompilerPassesSymbolicsExt = ["Symbolics", "LinearAlgebra"]
-
 [compat]
 LinearAlgebra = "1.11.0"
 PreallocationTools = "0.4.34"
