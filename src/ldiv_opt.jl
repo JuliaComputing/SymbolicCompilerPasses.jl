@@ -153,22 +153,14 @@ function get_factorization(A)
     qr_A
 end
 
-"""
-    transform_to_ldiv_inplace(expr::Code.Let, match_data, state::Code.CSEState) -> Code.Let
+const LINEARSOLVE_LIB = Ref(false)
 
-Transform `result = A \\ B` to:
-    result = ldiv!(A, B)
-
-This performs in-place linear solve, overwriting B with the result.
-"""
-function transform_to_ldiv_inplace(expr::Code.Let, match_data::AbstractVector, state::Code.CSEState)
-    # Validate all matches
-    safe_matches = filter(match_data) do match
-        is_safe = is_safe_to_optimize_ldiv(match, expr)
-        is_safe
-    end
-
-    isempty(safe_matches) && return expr
+ldiv_transformation(x, bool::Bool) = ldiv_transformation(x, Val(bool))
+ldiv_transformation(x, ::Nothing) = ldiv_transformation(x, Val(false))
+function ldiv_transformation(safe_matches, ::Val{false})
+    @warn "Backsolve may be sped up by adding LinearSolve.jl.
+    In order to enable this optimization, add LinearSolve.jl to your environment.
+    To opt-out of using LinearSolve, set SymbolicCompilerPasses.LINEARSOLVE_LIB[] = false." maxlog=Inf
 
     # Build transformation
     transformations = Dict{Int, Code.Assignment}()
@@ -196,6 +188,27 @@ function transform_to_ldiv_inplace(expr::Code.Let, match_data::AbstractVector, s
         ldiv_assignment = Code.Assignment(result_var, ldiv_call)
         transformations[match.ldiv_idx] = ldiv_assignment
     end
+    transformations
+end
+
+"""
+    transform_to_ldiv_inplace(expr::Code.Let, match_data, state::Code.CSEState) -> Code.Let
+
+Transform `result = A \\ B` to:
+    result = ldiv!(A, B)
+
+This performs in-place linear solve, overwriting B with the result.
+"""
+function transform_to_ldiv_inplace(expr::Code.Let, match_data::AbstractVector, state::Code.CSEState)
+    # Validate all matches
+    safe_matches = filter(match_data) do match
+        is_safe = is_safe_to_optimize_ldiv(match, expr)
+        is_safe
+    end
+
+    isempty(safe_matches) && return expr
+
+    transformations = ldiv_transformation(safe_matches, LINEARSOLVE_LIB[])
 
     # Apply transformations
     new_pairs = map(enumerate(expr.pairs)) do (i, pair)
