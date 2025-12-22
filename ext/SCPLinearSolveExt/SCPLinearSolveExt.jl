@@ -4,16 +4,22 @@ using SymbolicUtils
 using SymbolicUtils.Code
 using LinearSolve
 using LinearAlgebra
-import SymbolicCompilerPasses: ldiv_transformation, SymbolicCompilerPasses, get_factorization, get_from_cache
+import SymbolicCompilerPasses: ldiv_transformation, SymbolicCompilerPasses, get_factorization, get_from_cache, FACTORIZATION_CACHE
 
-@warn "here"
 SymbolicCompilerPasses.LINEARSOLVE_LIB[] = true
 
 function linear_solve(A, B)
-    prob = LinearSolve.LinearProblem(A, B)
-    linsolve = init(prob)
+    linsolve = get_factorization(A, B)
+    linsolve.b = B
     sol = solve!(linsolve)
     return sol.u
+end
+
+function get_factorization(A, B)
+    get!(FACTORIZATION_CACHE, A) do
+        prob = LinearSolve.LinearProblem(A, B)
+        linsolve = init(prob)
+    end
 end
 
 
@@ -30,7 +36,7 @@ function ldiv_transformation(safe_matches, ::Val{true})
         T = Code.vartype(B)
 
         # Create: result = ldiv!(A, B)
-        if Code.symtype(B) isa AbstractVector
+        if Code.symtype(B) <: AbstractVector
             ldiv_call = Code.Term{T}(
                 linear_solve,
                 [A, B];
