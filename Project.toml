@@ -9,11 +9,18 @@ PreallocationTools = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 
+[weakdeps]
+LinearSolve = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
+
 [sources]
 SymbolicUtils = {rev = "dg/opt_api", url = "https://github.com/DhairyaLGandhi/SymbolicUtils.jl"}
 
+[extensions]
+SCPLinearSolveExt = ["LinearSolve"]
+
 [compat]
 LinearAlgebra = "1.11.0"
+LinearSolve = "3.53.0"
 PreallocationTools = "0.4.34"
 StaticArrays = "1.9.15"
 SymbolicUtils = "4.1.0"

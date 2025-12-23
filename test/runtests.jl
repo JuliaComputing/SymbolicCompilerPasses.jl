@@ -4,5 +4,6 @@ using Pkg, Test, SafeTestsets
 	# Optimization
 	@safetestset "MatmulAdd Optimization" begin include("mul5_opt.jl") end
 	@safetestset "Literal Small Array Allocation" begin include("array_literal.jl") end
+	@safetestset "Ldiv Factorization Optimization" begin include("ldiv_opt.jl") end
 end
 
