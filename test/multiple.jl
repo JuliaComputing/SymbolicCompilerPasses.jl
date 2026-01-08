@@ -1,6 +1,6 @@
 function test_codegen(expr, rules, args...)
     current = SU.Code.cse(expr)
-    optimized = SC.apply_optimizations(current, SU.Code.CSEState(), rules)
+    optimized = SU.Code.apply_optimization_rules(current, SU.Code.CSEState(), rules)
 
     current_expr = Func([args...], [], current)
     optimized_expr = Func([args...], [], optimized)
@@ -30,4 +30,11 @@ end
     P = A \ B
     expr2 = P * E + A
     test_codegen(expr2, [SC.LDIV_RULE, SC.MATMUL_ADD_RULE], A, B, E)
+
+    @syms R[1:3, 1:3]
+    Ro = setmetadata(R, SC.IsOrthogonal, true)
+    P = A \ B
+    # expr3 = P + C * inv(Ro)
+    expr3 = tril(P) + C * inv(Ro)
+    test_codegen(expr3, [SC.LDIV_RULE, SC.MATMUL_ADD_RULE, SC.ORTHO_INV_RULE], A, B, C, R)
 end
