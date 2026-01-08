@@ -1,25 +1,16 @@
-"""
-Trace optimization pass.
-
-Optimizes trace operations to avoid expensive matrix multiplications:
-- tr(A * B) → dot(A, B')  # O(n²) instead of O(n³)
-- tr(A * B * C) → dot(A', C * B)  # Optimal ordering
-"""
-
 using LinearAlgebra: tr, dot
 
 """
-    TraceMatch{AT, BT, CT} <: AbstractMatched
+    TraceMatch{AT, BT} <: AbstractMatched
 
 Represents a matched trace pattern for optimization.
 
 Fields:
 - `trace_call`: The tr(...) call
-- `inner_expr`: The expression inside tr()
-- `matrices::Vector`: The matrices involved
+- `mul_call`: The expression inside tr()
+- `trace_idx::Int`: Index for tr(...) in the Let block
+- `mul_idx::Int`: Index for the mul chain in the Let block
 - `pattern::Symbol`: Type of pattern (:tr_product, :tr_chain)
-- `assignment::Code.Assignment`: The original assignment
-- `idx::Int`: Index in the Let block
 """
 struct TraceMatch{AT, BT} <: AbstractMatched
     trace_call::AT
@@ -27,11 +18,6 @@ struct TraceMatch{AT, BT} <: AbstractMatched
     trace_idx::Int
     mul_idx::Int
     pattern::Symbol
-    # inner_expr::BT
-    # matrices::Vector
-    # pattern::Symbol
-    # assignment::Code.Assignment
-    # idx::Int
 end
 
 """
@@ -87,8 +73,6 @@ function detect_trace_patterns(expr::Code.Let, state::Code.CSEState)
     for (t_idx, t) in zip(tr_candidates_idx, tr_candidates)
         for (m_idx, m) in zip(mul_candidates_idx, mul_candidates)
             if nameof(lhs(m)) in nameof.(arguments(rhs(t)))
-                @show "matched"
-                # push!(matched, (t, m))
                 push!(matches, TraceMatch(
                     t,
                     m,
@@ -107,49 +91,6 @@ function detect_trace_patterns(expr::Code.Let, state::Code.CSEState)
         mul = lhs(m.mul_call)
         count_uses_after(mul, expr, m.mul_idx) == 1
     end
-
-    # matches = TraceMatch[]
-    # @show expr
-
-    # for (idx, assignment) in enumerate(expr.pairs)
-    #     r = rhs(assignment)
-    #     iscall(r) || continue
-
-    #     op = operation(r)
-    #     args = arguments(r)
-
-    #     # Check if this is a tr(...) call
-    #     if op === tr || op === LinearAlgebra.tr
-    #         @show args
-    #         length(args) == 1 || continue
-    #         inner = args[1]
-    #         @show "here"
-
-    #         # Pattern: tr(A * B) or tr(A * B * C) etc.
-    #         @show is_matrix_product(inner)
-    #         if is_matrix_product(inner)
-    #             matrices = arguments(inner)
-
-    #             # Determine pattern type based on number of matrices
-    #             pattern = if length(matrices) == 2
-    #                 :tr_product  # tr(A * B)
-    #             elseif length(matrices) == 3
-    #                 :tr_chain_3  # tr(A * B * C)
-    #             else
-    #                 :tr_chain_general  # tr(A * B * C * ...)
-    #             end
-
-    #             push!(matches, TraceMatch(
-    #                 r,
-    #                 inner,
-    #                 matrices,
-    #                 pattern,
-    #                 assignment,
-    #                 idx
-    #             ))
-    #         end
-    #     end
-    # end
 
     isempty(matches) ? nothing : matches
 end
@@ -222,7 +163,6 @@ function transform_trace_to_dot(expr::Code.Let, matches, state::Code.CSEState)
     transformed_idxs = Set([getproperty.(matches, :mul_idx); getproperty.(matches, :trace_idx)])
 
     muls = getproperty.(matches, :mul_call)
-    @show Dict(m => count_occurrences(lhs(m), expr) for m in muls)
 
     counter = 1
 
@@ -345,12 +285,9 @@ function transform_trace_to_dot(expr::Code.Let, matches, state::Code.CSEState)
 
         transformations[match.trace_idx] = new_assignments
     end
-    @show transformations
 
     # Reconstruct Let block with transformations
     new_pairs = []
-    @show mul_idxs
-    # error()
     for (i, pair) in enumerate(expr.pairs)
         if i in mul_idxs
             continue
