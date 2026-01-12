@@ -37,6 +37,7 @@ function detect_orthogonal_matrix(expr, state::Code.CSEState)
         if op === inv
             args = arguments(r)
             length(args) == 1 || return false
+            getmetadata(args[1], IsOrthogonal, false) == true || return false
             return true
         end
         false
