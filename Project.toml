@@ -1,7 +1,7 @@
 name = "SymbolicCompilerPasses"
 uuid = "3384d301-0fbe-4b40-9ae0-b0e68bedb069"
-authors = ["Dhairya Gandhi <dhairya@juliahub.com>"]
 version = "0.1.0"
+authors = ["Dhairya Gandhi <dhairya@juliahub.com>"]
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -13,8 +13,9 @@ SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 LinearSolve = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
 Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
 
-[sources]
-SymbolicUtils = {rev = "dg/opt_api", url = "https://github.com/DhairyaLGandhi/SymbolicUtils.jl"}
+[sources.SymbolicUtils]
+rev = "dg/opt_api"
+url = "https://github.com/DhairyaLGandhi/SymbolicUtils.jl"
 
 [extensions]
 SymbolicCompilerPassesRotationsExt = ["Rotations",]
@@ -23,8 +24,7 @@ SCPLinearSolveExt = ["LinearSolve"]
 [compat]
 LinearAlgebra = "1.11.0, 1.10"
 LinearSolve = "3.53.0"
-PreallocationTools = "0.4.34"
-Rotations = "1.7.1"
+PreallocationTools = "0.4.34, 1"
 StaticArrays = "1.9.15"
 SymbolicUtils = "4.1.0"
 julia = "1.11"
