@@ -1,3 +1,10 @@
+using SymbolicUtils
+using SymbolicUtils.Code
+import SymbolicUtils as SU
+import SymbolicCompilerPasses as SC
+using LinearAlgebra
+using Test
+
 function test_codegen(expr, rules, args...)
     current = SU.Code.cse(expr)
     optimized = SU.Code.apply_optimization_rules(current, SU.Code.CSEState(), rules)
