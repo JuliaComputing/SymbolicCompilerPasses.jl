@@ -1,7 +1,7 @@
 name = "SymbolicCompilerPasses"
 uuid = "3384d301-0fbe-4b40-9ae0-b0e68bedb069"
-authors = ["Dhairya Gandhi <dhairya@juliahub.com>"]
 version = "0.1.0"
+authors = ["Dhairya Gandhi <dhairya@juliahub.com>"]
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -20,8 +20,7 @@ SymbolicCompilerPassesRotationsExt = ["Rotations"]
 [compat]
 LinearAlgebra = "1.11.0, 1.10"
 LinearSolve = "3.53.0"
-PreallocationTools = "0.4.34"
-Rotations = "1.7.1"
+PreallocationTools = "0.4.34, 1"
 StaticArrays = "1.9.15"
 SymbolicUtils = "4.1.0"
 julia = "1.11"
