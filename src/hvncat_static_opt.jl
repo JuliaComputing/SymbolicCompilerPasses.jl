@@ -129,7 +129,7 @@ Examples of what this detects:
 
 For small arrays (≤ 4×4), these will be converted to StaticArrays.
 """
-function detect_hvncat_pattern(expr::Code.Let, state::Code.CSEState)
+function detect_hvncat_pattern(expr::Code.Let, state)
     matches = HvncatMatch[]
 
     for (idx, pair) in enumerate(expr.pairs)
@@ -176,7 +176,7 @@ end
 
 """
     transform_hvncat_to_static(expr::Code.Let, match_data::Union{Nothing, Vector{HvncatMatch}},
-                               state::Code.CSEState) -> Code.Let
+                               state) -> Code.Let
 
 Transform hvncat operations to StaticArray constructors.
 
@@ -184,9 +184,10 @@ Converts:
 - `A = [1 2; 3 4]` → `A = SMatrix{2,2}(1, 2, 3, 4)`
 - `v = [1, 2, 3]` → `v = SVector{3}(1, 2, 3)`
 """
-transform_hvncat_to_static(expr, ::Nothing, state::Code.CSEState) = expr
+transform_hvncat_to_static(expr, ::Nothing, state) = expr
 function transform_hvncat_to_static(expr::Code.Let, match_data::Vector{HvncatMatch},
-                                   state::Code.CSEState)
+                                   state)
+    # @show match_data
     isempty(match_data) && return expr
 
     # Build transformation plan
@@ -251,7 +252,7 @@ const HVNCAT_STATIC_RULE = OptimizationRule(
 
 function literal_static_opt(expr, state::CSEState)
     # Try to apply optimization rules
-    optimized = apply_optimization_rules(expr, state, HVNCAT_STATIC_RULE)
+    optimized = apply_optimization_rule(expr, state, HVNCAT_STATIC_RULE)
     if optimized !== nothing
         return optimized
     end

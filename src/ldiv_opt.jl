@@ -13,7 +13,9 @@ end
 
 Detect patterns of the form `result = A \\ B` where both A and B are arrays.
 """
-function detect_ldiv_pattern(expr::Code.Let, state::Code.CSEState)
+# function detect_ldiv_pattern(expr::Code.Let, state::Code.CSEState)
+function detect_ldiv_pattern(expr::Code.Let, state)
+    global gex = expr
     ldiv_candidates_idx = findall(expr.pairs) do x
         r = rhs(x)
         iscall(r) || return false
