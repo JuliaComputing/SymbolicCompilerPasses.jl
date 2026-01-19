@@ -4,6 +4,9 @@ function detect_small_views(expr::Code.Let, state)
         r = rhs(p)
         iscall(r) || continue
         if operation(r) === view
+            arr, inds... = arguments(r)
+            myt = find_term(inds[1], expr)
+            is_small_hvncat(size(Code.rhs(myt))...) || continue
             push!(matches, (idx = i, expr = r))
         end
     end
@@ -19,6 +22,12 @@ function construct_type(dims)
     Core.apply_type(SVector, length(dims))
 end
 
+function find_term(target, expr::Code.Let)
+    filter(expr.pairs) do p
+        Code.lhs(p) === target
+    end |> only
+end
+
 function transform_view(expr, match_data, state)
     new_pairs = []
     idxs = Set(getproperty.(match_data, :idx))
@@ -29,15 +38,10 @@ function transform_view(expr, match_data, state)
         T = symtype(r)
         V = vartype(r)
         arr, inds... = arguments(r)
-        @show length.(inds)
-        t = @show term(construct_type, inds[1])
-        # transformations[idx] = term(Core.apply_type(SVector, size(inds[1])), r)
-        # @show Term{V}(t, [r], type = T)
-        # transformations[idx] = term(term(construct_type, inds[1]), r)
+        t = term(construct_type, inds[1])
         transformations[idx] = Term{V}(t, [r], type = T)
     end
 
-    # @show transformations[3]
     for (i, p) in enumerate(expr.pairs)
         if i in idxs
             new_rhs = transformations[i]
