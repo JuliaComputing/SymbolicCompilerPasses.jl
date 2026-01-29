@@ -66,13 +66,12 @@ function transform_inv_optimization(expr, matches, state::Code.CSEState)
             )
         else
             t = term(is_orthogonal_type, A)
-            @show t
-
-            code = IfElse(
-                t,
-                transpose(A),
-                inv(A)
-            )
+            # code = IfElse(
+            #     t,
+            #     transpose(A),
+            #     inv(A)
+            # )
+            code = ifelse(t, transpose(A), inv(A))
             expr_copy.pairs[match.idx] = Code.Assignment(
                 lhs(match.candidate),
                 code
@@ -92,7 +91,7 @@ const ORTHO_INV_RULE = OptimizationRule(
 function ortho_inv_opt(expr, state::Code.CSEState)
 
     # Try to apply optimization rules
-    optimized = apply_optimization_rules(expr, state, ORTHO_INV_RULE)
+    optimized = apply_optimization_rule(expr, state, ORTHO_INV_RULE)
     if optimized !== nothing
         return optimized
     end

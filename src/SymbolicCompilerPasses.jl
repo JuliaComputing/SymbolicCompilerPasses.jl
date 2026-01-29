@@ -11,6 +11,8 @@ import SymbolicUtils.Code: Code, OptimizationRule, substitute_in_ir, apply_optim
 import SymbolicUtils: search_variables, search_variables!
 using StaticArrays
 
+using DataStructures
+
 function bank(dic, key, value)
     if haskey(dic, key)
         dic[key] = vcat(dic[key], value)
@@ -26,6 +28,7 @@ include("ldiv_opt.jl")
 include("la_opt.jl")
 
 include("mb_opt.jl")
+include("scalar_to_vec_opt.jl")
 
 # function apply_optimizations(ir, state, rules)
 #     for rule in sort(rules, by = x -> x.priority)
