@@ -12,7 +12,7 @@ struct MatMulAddMatch{At, Bt, Ct} <: AbstractMatched
 end
 
 """
-    detect_matmul_add_pattern(expr::Code.Let, state::Code.CSEState) -> Union{Nothing, Vector{MatMulAddMatch}}
+    detect_matmul_add_pattern(expr::Code.Let, state) -> Union{Nothing, Vector{MatMulAddMatch}}
 
 Attempts to detect patterns of the form:
 
@@ -30,7 +30,7 @@ result = temp
 
 `A` and `B` must not be aliased.
 """
-function detect_matmul_add_pattern(expr::Code.Let, state::Code.CSEState)
+function detect_matmul_add_pattern(expr::Code.Let, state)
     mul_candidates_idx = findall(expr.pairs) do x
         r = rhs(x)
         iscall(r) || return false
@@ -88,8 +88,8 @@ function get_from_cache(x)
     end
 end
 
-transform_to_mul5_assignment(expr, ::Tuple{Union{Nothing, AbstractVector{Nothing}, Tuple{Nothing, Nothing}}, <:Any}, state::Code.CSEState) = expr
-function transform_to_mul5_assignment(expr, match_data_, state::Code.CSEState)
+transform_to_mul5_assignment(expr, ::Tuple{Union{Nothing, AbstractVector{Nothing}, Tuple{Nothing, Nothing}}, <:Any}, state) = expr
+function transform_to_mul5_assignment(expr, match_data_, state)
     match_data_, net_additive_terms = match_data_
     match_data_ === nothing && return expr
     Cset = Set(Iterators.flatten(getproperty.(match_data_, :Cs)))
