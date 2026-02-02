@@ -176,7 +176,7 @@ const MATMUL_ADD_RULE = OptimizationRule(
 function mul5_opt(expr, state::CSEState)
 
     # Try to apply optimization rules
-    optimized = apply_optimization_rules(expr, state, MATMUL_ADD_RULE)
+    optimized = apply_optimization_rules(expr, state, [MATMUL_ADD_RULE])
     if optimized !== nothing
         return optimized
     end

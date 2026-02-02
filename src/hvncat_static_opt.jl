@@ -251,7 +251,7 @@ const HVNCAT_STATIC_RULE = OptimizationRule(
 
 function literal_static_opt(expr, state::CSEState)
     # Try to apply optimization rules
-    optimized = apply_optimization_rules(expr, state, HVNCAT_STATIC_RULE)
+    optimized = apply_optimization_rules(expr, state, [HVNCAT_STATIC_RULE])
     if optimized !== nothing
         return optimized
     end
