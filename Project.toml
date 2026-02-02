@@ -23,7 +23,7 @@ SCPLinearSolveExt = ["LinearSolve"]
 LinearAlgebra = "1"
 LinearSolve = "3.53.0"
 PreallocationTools = "0.4.34, 1"
-StaticArrays = "1.9.15"
+StaticArrays = "1.9.15, 1"
 SymbolicUtils = "4.1.0"
 julia = "1"
 
