@@ -25,7 +25,7 @@ LinearSolve = "3.53.0"
 PreallocationTools = "0.4.34, 1"
 StaticArrays = "1.9.15, 1"
 SymbolicUtils = "4.1.0"
-julia = "1.10"
+julia = "1"
 
 [extras]
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
