@@ -4,7 +4,7 @@ using SymbolicUtils
 using SymbolicUtils.Code
 using LinearSolve
 using LinearAlgebra
-import SymbolicCompilerPasses: ldiv_transformation, SymbolicCompilerPasses, get_factorization, get_from_cache, FACTORIZATION_CACHE, linearsolve_lib, LINEARSOLVE_LIB
+import SymbolicCompilerPasses: ldiv_transformation, SymbolicCompilerPasses, get_factorization, get_from_cache, FACTORIZATION_CACHE, LINEARSOLVE_LIB
 
 __init__() = SymbolicCompilerPasses.LINEARSOLVE_LIB[] = true
 
