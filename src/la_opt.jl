@@ -77,7 +77,7 @@ const NORMALIZE_RULE = GenericRule("normalize", LinearAlgebra.normalize, LinearA
    
 function triu_opt(expr, state)
     # Try to apply optimization rules
-    optimized = apply_optimization_rules(expr, state, TRIU_RULE)
+    optimized = apply_optimization_rules(expr, state, [TRIU_RULE])
     if optimized !== nothing
         return optimized
     end
