@@ -3,6 +3,7 @@ using SymbolicUtils.Code
 import SymbolicUtils as SU
 import SymbolicCompilerPasses as SC
 using LinearAlgebra
+using Symbolics
 using Test
 
 function test_codegen(expr, rules, args...)
