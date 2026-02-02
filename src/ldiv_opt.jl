@@ -230,7 +230,7 @@ const LDIV_RULE = OptimizationRule(
 function ldiv_opt(expr, state::CSEState)
 
     # Try to apply optimization rules
-    optimized = apply_optimization_rules(expr, state, LDIV_RULE)
+    optimized = apply_optimization_rules(expr, state, [LDIV_RULE])
     if optimized !== nothing
         return optimized
     end
