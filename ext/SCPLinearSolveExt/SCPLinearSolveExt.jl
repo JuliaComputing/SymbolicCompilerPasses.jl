@@ -4,9 +4,10 @@ using SymbolicUtils
 using SymbolicUtils.Code
 using LinearSolve
 using LinearAlgebra
-import SymbolicCompilerPasses: ldiv_transformation, SymbolicCompilerPasses, get_factorization, get_from_cache, FACTORIZATION_CACHE
+import SymbolicCompilerPasses: ldiv_transformation, SymbolicCompilerPasses, get_factorization, get_from_cache, FACTORIZATION_CACHE, linearsolve_lib, LINEARSOLVE_LIB
 
-SymbolicCompilerPasses.LINEARSOLVE_LIB[] = true
+__init__() = SymbolicCompilerPasses.LINEARSOLVE_LIB[] = true
+linearsolve_lib(::Nothing) = SymbolicCompilerPasses.LINEARSOLVE_LIB[]
 
 function linear_solve(A, B)
     linsolve = get_factorization(A, B)

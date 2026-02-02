@@ -191,6 +191,9 @@ function ldiv_transformation(safe_matches, ::Val{false})
     transformations
 end
 
+linearsolve_lib() = linearsolve_lib(nothing)
+linearsolve_lib(_) = false
+
 """
     transform_to_ldiv_inplace(expr::Code.Let, match_data, state) -> Code.Let
 
@@ -208,7 +211,7 @@ function transform_to_ldiv_inplace(expr::Code.Let, match_data::AbstractVector, s
 
     isempty(safe_matches) && return expr
 
-    transformations = ldiv_transformation(safe_matches, LINEARSOLVE_LIB[])
+    transformations = ldiv_transformation(safe_matches, linearsolve_lib())
 
     # Apply transformations
     new_pairs = map(enumerate(expr.pairs)) do (i, pair)
