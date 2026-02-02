@@ -29,6 +29,7 @@ function detect_ldiv_pattern(expr::Code.Let, state)
         all_arrays || return false
 
         A, B = args
+        @show validate_ldiv_shapes(A, B)
         validate_ldiv_shapes(A, B)
     end
 
@@ -52,6 +53,7 @@ For A \\ B:
 - B must have n rows: (n, m) or (n,)
 """
 function validate_ldiv_shapes(A, B)
+    return true
     A_shape = shape(A)
     B_shape = shape(B)
 
@@ -151,6 +153,7 @@ function get_factorization(A)
     qr_A = get!(FACTORIZATION_CACHE, A) do 
         qr(A)
     end
+    # qr_A = qr(A)
 
     qr_A
 end
@@ -201,7 +204,7 @@ Transform `result = A \\ B` to:
 
 This performs in-place linear solve, overwriting B with the result.
 """
-function transform_to_ldiv_inplace(expr::Code.Let, match_data::AbstractVector, state::Code.CSEState)
+function transform_to_ldiv_inplace(expr::Code.Let, match_data::AbstractVector, state)
     # Validate all matches
     safe_matches = filter(match_data) do match
         is_safe = is_safe_to_optimize_ldiv(match, expr)
