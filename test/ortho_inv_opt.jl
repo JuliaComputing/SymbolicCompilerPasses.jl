@@ -1,5 +1,3 @@
-using Revise, BenchmarkTools
-
 using SymbolicUtils
 using SymbolicUtils.Code
 import SymbolicUtils as SU
@@ -16,7 +14,7 @@ function has_ortho_opt(expr::Code.Let)
         has_ortho_opt(rhs_expr)
     end
 end
-has_ortho_opt(expr::Code.IfElse) = has_ortho_opt(expr.ifbody) || has_ortho_opt(expr.elsebody)
+# has_ortho_opt(expr::Code.IfElse) = has_ortho_opt(expr.ifbody) || has_ortho_opt(expr.elsebody)
 
 function has_ortho_opt(expr)
     if SU.iscall(expr)
@@ -32,7 +30,7 @@ function check_ortho_opt(expr, A, B)
 
     optimized = SC.ortho_inv_opt(current, SU.Code.CSEState())
     # return optimized
-    return toexpr(optimized)
+    # return toexpr(optimized)
 
     @test has_ortho_opt(optimized)
 
