@@ -28,7 +28,7 @@ end
 
 
 @testset "Combined Optimizations" begin
-    @syms A[1:3, 1:3] B[1:3, 1:2] C[1:3, 1:3] D[1:2, 1:2] E[1:2, 1:3] 
+    @syms A[1:3, 1:3] B[1:3, 1:2] C[1:3, 1:3] D[1:3, 1:2] E[1:2, 1:3] 
 
     P = A \ B
     expr = P + C * D
