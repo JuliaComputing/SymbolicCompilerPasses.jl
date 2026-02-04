@@ -12,7 +12,7 @@ struct MatMulAddMatch{At, Bt, Ct} <: AbstractMatched
 end
 
 """
-    detect_matmul_add_pattern(expr::Code.Let, state::Code.CSEState) -> Union{Nothing, Vector{MatMulAddMatch}}
+    detect_matmul_add_pattern(expr::Code.Let, state) -> Union{Nothing, Vector{MatMulAddMatch}}
 
 Attempts to detect patterns of the form:
 
@@ -176,7 +176,7 @@ const MATMUL_ADD_RULE = OptimizationRule(
 function mul5_opt(expr, state::CSEState)
 
     # Try to apply optimization rules
-    optimized = apply_optimization_rules(expr, state, MATMUL_ADD_RULE)
+    optimized = apply_optimization_rules(expr, state, [MATMUL_ADD_RULE])
     if optimized !== nothing
         return optimized
     end

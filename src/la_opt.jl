@@ -75,9 +75,9 @@ const TRIL_RULE = GenericRule("tril", LinearAlgebra.tril, LinearAlgebra.tril!, 8
 const NORMALIZE_RULE = GenericRule("normalize", LinearAlgebra.normalize, LinearAlgebra.normalize!, 8)
 # const CONJ_RULE = GenericRule("conj", LinearAlgebra.conj, LinearAlgebra.conj!, 8)
    
-function triu_opt(expr, state::CSEState)
+function triu_opt(expr, state)
     # Try to apply optimization rules
-    optimized = apply_optimization_rules(expr, state, TRIU_RULE)
+    optimized = apply_optimization_rules(expr, state, [TRIU_RULE])
     if optimized !== nothing
         return optimized
     end

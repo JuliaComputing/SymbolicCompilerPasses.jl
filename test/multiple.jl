@@ -1,3 +1,11 @@
+using SymbolicUtils
+using SymbolicUtils.Code
+import SymbolicUtils as SU
+import SymbolicCompilerPasses as SC
+using LinearAlgebra
+using Symbolics
+using Test
+
 function test_codegen(expr, rules, args...)
     current = SU.Code.cse(expr)
     optimized = SU.Code.apply_optimization_rules(current, SU.Code.CSEState(), rules)
@@ -20,7 +28,7 @@ end
 
 
 @testset "Combined Optimizations" begin
-    @syms A[1:3, 1:3] B[1:3, 1:2] C[1:3, 1:2] D[1:2, 1:2] E[1:2, 1:3] 
+    @syms A[1:3, 1:3] B[1:3, 1:2] C[1:3, 1:3] D[1:3, 1:2] E[1:2, 1:3] 
 
     P = A \ B
     expr = P + C * D

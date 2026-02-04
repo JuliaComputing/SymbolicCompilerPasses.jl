@@ -118,7 +118,7 @@ end
 is_small_hvncat(rows::Int) = rows <= 16  # For vectors
 
 """
-    detect_hvncat_pattern(expr::Code.Let, state::Code.CSEState) -> Union{Nothing, Vector{HvncatMatch}}
+    detect_hvncat_pattern(expr::Code.Let, state) -> Union{Nothing, Vector{HvncatMatch}}
 
 Detect hvncat/hcat/vcat operations that construct small literal arrays.
 
@@ -187,7 +187,6 @@ Converts:
 transform_hvncat_to_static(expr, ::Nothing, state) = expr
 function transform_hvncat_to_static(expr::Code.Let, match_data::Vector{HvncatMatch},
                                    state)
-    # @show match_data
     isempty(match_data) && return expr
 
     # Build transformation plan
@@ -252,7 +251,7 @@ const HVNCAT_STATIC_RULE = OptimizationRule(
 
 function literal_static_opt(expr, state::CSEState)
     # Try to apply optimization rules
-    optimized = apply_optimization_rule(expr, state, HVNCAT_STATIC_RULE)
+    optimized = apply_optimization_rules(expr, state, [HVNCAT_STATIC_RULE])
     if optimized !== nothing
         return optimized
     end
