@@ -10,6 +10,7 @@ __init__() = SymbolicCompilerPasses.LINEARSOLVE_LIB[] = true
 
 function linear_solve(A, B)
     linsolve = get_factorization(A, B)
+    # linsolve = init(LinearSolve.LinearProblem(A, B))
     linsolve.b = B
     sol = solve!(linsolve)
     return sol.u
