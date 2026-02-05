@@ -49,13 +49,13 @@ function candidate_templates(expr)
     end
 end
 
-function hold_eq(eq)
+function hold_eq(eq, inputs)
     if SU.isconst(eq) # || SU.issym(eq)
         return true
     elseif SU.issym(eq)
         # TODO: some variables seem to get used but don't have a definition
         # How do you handle those?
-        if eq === Main.t || eq === Main.P
+        if eq in inputs
             return true
         else
             return false
@@ -71,7 +71,7 @@ function hold_eq(eq)
 
 end
 
-function expand_eq(du_expr, expr)
+function expand_eq(du_expr, inputs, expr)
     args = arguments(du_expr)
     defs = [find_definition(arg, expr).def.rhs for arg in args]
     sub_map = Dict(arg => def for (arg, def) in zip(args, defs))
@@ -79,14 +79,14 @@ function expand_eq(du_expr, expr)
     new_eq = Code.substitute_in_ir(du_expr, sub_map)
 
     new_args = reduce(vcat, arguments.(defs))
-    expand_eq(new_eq, new_args, expr)
+    expand_eq(new_eq, new_args, inputs, expr)
 end
-function expand_eq(du_expr, args, expr)
-    if all(hold_eq(a) for a in args)
+function expand_eq(du_expr, args, inputs, expr)
+    if all(hold_eq(a, inputs) for a in args)
         return du_expr
     end
 
-    args_to_sub = filter(a -> !hold_eq(a), args)
+    args_to_sub = filter(a -> !hold_eq(a, inputs), args)
     # for a in args_to_sub
     #     fd = @show find_definition(a, expr)
     #     if isnothing(fd.idx)
@@ -98,8 +98,8 @@ function expand_eq(du_expr, args, expr)
     defs = [find_definition(arg, expr).def.rhs for arg in args_to_sub]
     sub_map = Dict(arg => def for (arg, def) in zip(args_to_sub, defs))
     new_eq = Code.substitute_in_ir(du_expr, sub_map)
-    new_args = reduce(vcat, hold_eq(def) ? def : arguments(def) for def in defs)
-    expand_eq(new_eq, new_args, expr)
+    new_args = reduce(vcat, hold_eq(def, inputs) ? def : arguments(def) for def in defs)
+    expand_eq(new_eq, new_args, inputs, expr)
 end
 
 function get_expanded_args(expr)
@@ -232,10 +232,24 @@ struct VectorizedJacobianMatched{TJ, TL, TNL, TU, S} <: AbstractMatched
     shape::S
 end
 
+function improve_inputs(inputs)
+    improved = Set()
+    for inp in inputs
+        if SU.iscall(inp) && operation(inp) == getindex
+            arr, _ = arguments(inp)
+            push!(improved, arr)
+        else
+            push!(improved, inp)
+        end
+    end
+    improved
+end
+
 function detect_jacobian(expr::Code.Let, state)
+    inputs = improve_inputs(search_variables(expr))
     eqs = candidate_templates(expr)
     # J[i,j] = ∂(du[i])/∂(u[j])
-    expanded_eqs = expand_eq.(eqs, Ref(expr))
+    expanded_eqs = expand_eq.(eqs, Ref(inputs), Ref(expr))
     full_expanded_eqs = replace_idx_vars_with_vals.(expanded_eqs, Ref(expr))
     J = Symbolics.jacobian(vec(full_expanded_eqs), vec(collect(Main.U)))
     L, NL = separate_linear_nonlinear(J, Main.U)
