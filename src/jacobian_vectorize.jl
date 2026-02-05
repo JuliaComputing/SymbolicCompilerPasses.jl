@@ -42,9 +42,24 @@ function code_flow(expr)
     return g
 end
 
+function candidate_templates(expr)
+    dus = find_definition.(expr.body, Ref(expr))
+    map(dus) do du
+        du.def.rhs
+    end
+end
+
 function hold_eq(eq)
     if SU.isconst(eq) # || SU.issym(eq)
         return true
+    elseif SU.issym(eq)
+        # TODO: some variables seem to get used but don't have a definition
+        # How do you handle those?
+        if eq === Main.t || eq === Main.P
+            return true
+        else
+            return false
+        end
     else
         if SU.iscall(eq) && operation(eq) == getindex
             return true
@@ -72,6 +87,14 @@ function expand_eq(du_expr, args, expr)
     end
 
     args_to_sub = filter(a -> !hold_eq(a), args)
+    # for a in args_to_sub
+    #     fd = @show find_definition(a, expr)
+    #     if isnothing(fd.idx)
+    #         @warn a
+    #         @show SU.issym(a)
+    #         @warn du_expr
+    #     end
+    # end
     defs = [find_definition(arg, expr).def.rhs for arg in args_to_sub]
     sub_map = Dict(arg => def for (arg, def) in zip(args_to_sub, defs))
     new_eq = Code.substitute_in_ir(du_expr, sub_map)
@@ -101,6 +124,7 @@ function replace_idx_vars_with_vals(eq, expr)
     if SU.iscall(eq)
         if operation(eq) == getindex
             idx_vars = arguments(eq)[2:end]
+            idx_vars = filter(!SU.isconst, idx_vars)
             if all(SU.isconst, idx_vars)
                 return eq
             end
@@ -200,7 +224,7 @@ function detect_jacobian_trace(f, DU, U, P, t)
     VectorizedJacobianMatched(J, L, NL, U, size(U))
 end
 
-struct VectorizedJacobianMatched{TJ, TL, TNL, TU, S} <: AbsctractMatched
+struct VectorizedJacobianMatched{TJ, TL, TNL, TU, S} <: AbstractMatched
     J::TJ
     L::TL
     NL::TNL
@@ -213,18 +237,18 @@ function detect_jacobian(expr::Code.Let, state)
     # J[i,j] = ∂(du[i])/∂(u[j])
     expanded_eqs = expand_eq.(eqs, Ref(expr))
     full_expanded_eqs = replace_idx_vars_with_vals.(expanded_eqs, Ref(expr))
-    J = Symbolics.jacobian(vec(full_expanded_eqs), vec(collect(U)))
-    L, NL = separate_linear_nonlinear(J, U)
-    VectorizedJacobianMatched(J, L, NL, U)
+    J = Symbolics.jacobian(vec(full_expanded_eqs), vec(collect(Main.U)))
+    L, NL = separate_linear_nonlinear(J, Main.U)
+    VectorizedJacobianMatched(J, L, NL, Main.U, size(Main.U))
 end
 
 function transform_jacobian(expr::Code.Let, match_data::VectorizedJacobianMatched, state)
-    # L * U + NL(U)
+    # DU = L * U + NL(U)
 
     linear_terms = match_data.L * vec(match_data.U)
-    nonlinear_terms = diag(match_data.NL)
+    nonlinear_terms = dropdims(sum(match_data.NL, dims = 2), dims = 2)
     val = linear_terms + nonlinear_terms
-    T = vartype(match_data.L)
+    T = SymReal
     res = Term{T}(reshape, [val, match_data.shape]; type = symtype(match_data.U))
 
     Code.Let([], res, expr.let_block)
