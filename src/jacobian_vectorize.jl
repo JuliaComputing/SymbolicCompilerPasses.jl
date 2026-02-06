@@ -324,6 +324,10 @@ struct VectorizedJacobianMatched{TL, TNL, TC, TU, S} <: AbstractMatched
     shape::S
 end
 
+"""
+search_variables adds things like U[i, j, k] to the variables but not U
+this only keeps the array variables
+"""
 function improve_inputs(inputs)
     improved = Set()
     for inp in inputs
@@ -434,7 +438,7 @@ function detect_jacobian(expr::Code.Let, state)
 end
 
 function transform_jacobian(expr::Code.Let, match_data::VectorizedJacobianMatched, state)
-    # DU = L * U + NL(U)
+    # DU = L * U + NL(U) + C
 
     linear_terms = match_data.L * vec(match_data.U)
     nonlinear_terms = match_data.NL
