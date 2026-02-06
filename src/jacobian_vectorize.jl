@@ -319,7 +319,7 @@ end
 struct VectorizedJacobianMatched{TL, TNL, TC, TU, S} <: AbstractMatched
     L::TL
     NL::TNL
-    C::C
+    C::TC
     U::TU
     shape::S
 end
@@ -439,15 +439,44 @@ end
 
 function transform_jacobian(expr::Code.Let, match_data::VectorizedJacobianMatched, state)
     # DU = L * U + NL(U) + C
-
-    linear_terms = match_data.L * vec(match_data.U)
-    nonlinear_terms = match_data.NL
-    const_terms = match_data.C
-    val = linear_terms + nonlinear_terms + const_terms
     T = SymReal
-    res = Term{T}(reshape, [val, match_data.shape]; type = symtype(match_data.U))
 
-    Code.Let([], res, expr.let_block)
+    counter = 1
+    linear_sym = Symbol("##jacobian_vectorize##", counter)
+    linear_terms = match_data.L * vec(match_data.U)
+    # linear_terms = Term{T}(*, [match_data.L, vec(match_data.U)];
+    #                     type = symtype(match_data.U),
+    #                     shape = match_data.shape)
+    linear_var = Sym{T}(linear_sym; type = symtype(match_data.U))
+    linear_ass = Assignment(linear_var, linear_terms)
+
+    counter += 1
+    nonlinear_sym = Symbol("##jacobian_vectorize##", counter)
+    nonlinear_terms = match_data.NL
+    nonlinear_var = Sym{T}(nonlinear_sym; type = symtype(match_data.U))
+    nonlinear_ass = Assignment(nonlinear_var, nonlinear_terms)
+
+    counter += 1
+    const_sym = Symbol("##jacobian_vectorize##", counter)
+    const_terms = match_data.C
+    const_var = Sym{T}(const_sym; type = symtype(match_data.U))
+    const_ass = Assignment(const_var, const_terms)
+
+    counter += 1
+    val_sym = Symbol("##jacobian_vectorize##", counter)
+    # val = linear_terms + nonlinear_terms + const_terms
+    val = term(+, linear_terms, nonlinear_terms, const_terms, type = symtype(match_data.U))
+    val_var = Sym{T}(val_sym; type = symtype(match_data.U))
+    val_ass = Assignment(val_var, val)
+
+    counter += 1
+    res_sym = Symbol("##jacobian_vectorize##", counter)
+    res = Term{T}(reshape, [val, match_data.shape]; type = symtype(match_data.U))
+    res_var = Sym{T}(res_sym; type = symtype(match_data.U))
+    res_ass = Assignment(res_var, res)
+
+    new_pairs = [linear_ass, nonlinear_ass, const_ass, val_ass, res_ass]
+    Code.Let(new_pairs, res_var, expr.let_block)
 end
 
 const JACOBIAN_VECTORIZE_RULE = OptimizationRule(
