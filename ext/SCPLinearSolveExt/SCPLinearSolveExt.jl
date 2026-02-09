@@ -16,10 +16,12 @@ function linear_solve(A, B)
 end
 
 function get_factorization(A, B)
-    get!(FACTORIZATION_CACHE, A) do
-        prob = LinearSolve.LinearProblem(A, B)
-        linsolve = init(prob)
-    end
+    # get!(FACTORIZATION_CACHE, A) do
+    #     prob = LinearSolve.LinearProblem(A, B)
+    #     linsolve = init(prob)
+    # end
+    prob = LinearSolve.LinearProblem(A, B)
+    linsolve = init(prob)
 end
 
 
