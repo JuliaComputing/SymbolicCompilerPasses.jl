@@ -25,7 +25,7 @@ end
 
 function ldiv_transformation(safe_matches, ::Val{true})
     @info "Using LinearSolve.jl for in-place backsolve optimizations.
-    In order to opt-out of using LinearSolve, set SymbolicCompilerPasses.LINEARSOLVE_LIB[] = false." maxlog=Inf
+    In order to opt-out of using LinearSolve, set SymbolicCompilerPasses.LINEARSOLVE_LIB[] = false." maxlog=1
      # Build transformation
     transformations = Dict{Int, Code.Assignment}()
 
@@ -43,7 +43,7 @@ function ldiv_transformation(safe_matches, ::Val{true})
                 type=Code.symtype(B)
             )
         else
-            @warn "Skipping LinearSolve optimization for match as B is not a vector." maxlog=Inf
+            @warn "Skipping LinearSolve optimization for match as B is not a vector." maxlog=1
             push!(rejected_matches, match)
             continue
         end
