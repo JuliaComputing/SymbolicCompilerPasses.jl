@@ -418,7 +418,7 @@ function construct_jacobian(eqs, vars, expr)
 
     for i in 1:length(eqs)
         js, const_terms, linear_terms, nonlinear_sum = extract_coeffs(eqs[i], vars, expr)
-        for (k, j) in enumerate(js)
+        for j in js
             A[i, Symbolics.value(j)] = linear_terms[linear_to_cartesian(j, vars)]
         end
         NL[i] = nonlinear_sum
