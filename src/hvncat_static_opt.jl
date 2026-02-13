@@ -205,21 +205,16 @@ function transform_hvncat_to_static(expr::Code.Let, match_data::Vector{HvncatMat
             # Column vector: SVector{n}(elements...)
             n = dims[1]
             t = term(Core.apply_type, StaticArrays.SVector, n; type = Any)
-            static_ctor = Term{T}(
-                t,
-                elements;
-                type=symtype(lhs_var)
-            )
         else
             # Matrix: SMatrix{m,n}(elements...)
             m, n = dims
             t = term(Core.apply_type, StaticArrays.SMatrix, m, n; type = Any)
-            static_ctor = Term{T}(
-                t,
-                elements;
-                type=symtype(lhs_var)
-            )
         end
+        static_ctor = Term{T}(
+            t,
+            elements;
+            type=symtype(lhs_var)
+        )
 
         new_assignment = Assignment(lhs_var, static_ctor)
         transformations[match.assignment_idx] = new_assignment

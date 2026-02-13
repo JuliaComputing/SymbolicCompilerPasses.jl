@@ -5,14 +5,33 @@ using SymbolicUtils.Code
 using LinearSolve
 using LinearAlgebra
 import SymbolicCompilerPasses: ldiv_transformation, SymbolicCompilerPasses, get_factorization, get_from_cache, FACTORIZATION_CACHE
+using StaticArrays
 
-SymbolicCompilerPasses.LINEARSOLVE_LIB[] = true
+__init__() = SymbolicCompilerPasses.LINEARSOLVE_LIB[] = true
+
+const LINSOLVEPROB_CACHE = Dict()
+
+function get_linear_prob(A::StaticArray, B::StaticArray)
+    prob = LinearSolve.LinearProblem(A, B)
+end
+
+function get_linear_prob(A, B)
+    get!(LINSOLVEPROB_CACHE, A) do
+        prob = LinearSolve.LinearProblem(A, B)
+        init(prob)
+    end
+end
 
 function linear_solve(A, B)
-    linsolve = get_factorization(A, B)
-    # linsolve = init(LinearSolve.LinearProblem(A, B))
+    linsolve = get_linear_prob(A, B)
     linsolve.b = B
     sol = solve!(linsolve)
+    return sol.u
+end
+
+function linear_solve(A::StaticArray, B::StaticArray)
+    linsolve = get_linear_prob(A, B)
+    sol = solve(linsolve)
     return sol.u
 end
 
