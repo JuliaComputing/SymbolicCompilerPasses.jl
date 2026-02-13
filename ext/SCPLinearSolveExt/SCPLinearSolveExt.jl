@@ -15,11 +15,11 @@ function get_linear_prob(A::StaticArray, B::StaticArray)
     prob = LinearSolve.LinearProblem(A, B)
 end
 
-function get_linear_prob(A, B)
+function get_linear_prob(A::TA, B::TB) where {TA, TB}
     get!(LINSOLVEPROB_CACHE, A) do
         prob = LinearSolve.LinearProblem(A, B)
         init(prob)
-    end
+    end::Base.promote_op(LinearSolve.LinearProblem, Tuple{TA, TB})
 end
 
 function linear_solve(A, B)
