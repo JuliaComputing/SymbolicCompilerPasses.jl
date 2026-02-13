@@ -9,13 +9,11 @@ struct LdivMatch{Ta, Tb, S <: Assignment, P <: AbstractString} <: AbstractMatche
 end
 
 """
-    detect_ldiv_pattern(expr::Code.Let, state::Code.CSEState) -> Vector{LdivMatch}
+    detect_ldiv_pattern(expr::Code.Let, state) -> Vector{LdivMatch}
 
 Detect patterns of the form `result = A \\ B` where both A and B are arrays.
 """
-# function detect_ldiv_pattern(expr::Code.Let, state::Code.CSEState)
 function detect_ldiv_pattern(expr::Code.Let, state)
-    global gex = expr
     ldiv_candidates_idx = findall(expr.pairs) do x
         r = rhs(x)
         iscall(r) || return false
@@ -197,7 +195,7 @@ function ldiv_transformation(safe_matches, ::Val{false})
 end
 
 """
-    transform_to_ldiv_inplace(expr::Code.Let, match_data, state::Code.CSEState) -> Code.Let
+    transform_to_ldiv_inplace(expr::Code.Let, match_data, state) -> Code.Let
 
 Transform `result = A \\ B` to:
     result = ldiv!(A, B)
@@ -222,7 +220,7 @@ function transform_to_ldiv_inplace(expr::Code.Let, match_data::AbstractVector, s
 
     return Code.Let(new_pairs, expr.body, expr.let_block)
 end
-transform_to_ldiv_inplace(expr::Code.Let, match_data::Nothing, state::Code.CSEState) = expr
+transform_to_ldiv_inplace(expr::Code.Let, match_data::Nothing, state) = expr
 
 # Create the optimization rule
 const LDIV_RULE = OptimizationRule(
@@ -235,7 +233,7 @@ const LDIV_RULE = OptimizationRule(
 function ldiv_opt(expr, state::CSEState)
 
     # Try to apply optimization rules
-    optimized = apply_optimization_rules(expr, state, LDIV_RULE)
+    optimized = apply_optimization_rules(expr, state, [LDIV_RULE])
     if optimized !== nothing
         return optimized
     end
