@@ -19,7 +19,7 @@ function get_linear_prob(A::TA, B::TB) where {TA, TB}
     get!(LINSOLVEPROB_CACHE, A) do
         prob = LinearSolve.LinearProblem(A, B)
         init(prob)
-    end::Base.promote_op(LinearSolve.LinearProblem, Tuple{TA, TB})
+    end::Base.promote_op(init, Tuple{Base.promote_op(LinearSolve.LinearProblem, Tuple{TA, TB})})
 end
 
 function linear_solve(A, B)
