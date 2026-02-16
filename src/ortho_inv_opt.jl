@@ -66,8 +66,6 @@ function transform_inv_optimization(expr, matches, state::Code.CSEState)
             )
         else
             t = term(is_orthogonal_type, A)
-            # @show t
-
             # code = IfElse(
             #     t,
             #     transpose(A),
