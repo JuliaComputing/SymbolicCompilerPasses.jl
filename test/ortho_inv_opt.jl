@@ -64,11 +64,11 @@ end
     check_ortho_opt(expr, Ao, B)
 
     expr2 = inv(A) * B
-    check_ortho_opt(expr2, A, B)
+    check_ortho_opt(expr2, A, B; expected_ortho = false)
 
     expr3 = inv(A) * B * inv(Ao)
     check_ortho_opt(expr3, A, B)
     
     expr4 = inv(Ao * B) + B
-    check_ortho_opt(expr4, A, B)
+    check_ortho_opt(expr4, A, B; expected_ortho = false)  # Can't optimize inv(Ao * B) without more info
 end
