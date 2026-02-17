@@ -9,7 +9,9 @@ import SymbolicUtils.Code: Code, OptimizationRule, substitute_in_ir, apply_optim
     Assignment, CSEState, lhs, rhs, apply_substitution_map, issym, isterm, toexpr,
     _is_array_of_symbolics, MakeArray, shape
 import SymbolicUtils: search_variables, search_variables!
+import SymbolicUtils as SU
 using StaticArrays
+using Symbolics
 
 using DataStructures
 
@@ -28,5 +30,6 @@ include("ldiv_opt.jl")
 include("la_opt.jl")
 
 include("mb_opt.jl")
+include("jacobian_vectorize.jl")
 
 end # module SymbolicCompilerPasses

@@ -7,4 +7,6 @@ using Pkg, Test, SafeTestsets
 	@safetestset "Ldiv Factorization Optimization" begin include("ldiv_opt.jl") end
 	@safetestset "Orthogonal Inverse Optimization" begin include("ortho_inv_opt.jl") end
 	@safetestset "Apply Multiple Rules" begin include("multiple.jl") end
+	
+	@safetestset "Vectorize Scalar Equations" begin include("scalar_to_vec.jl") end
 end
