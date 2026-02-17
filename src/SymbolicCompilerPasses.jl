@@ -32,13 +32,4 @@ include("la_opt.jl")
 include("mb_opt.jl")
 include("jacobian_vectorize.jl")
 
-# function apply_optimizations(ir, state, rules)
-#     for rule in sort(rules, by = x -> x.priority)
-#         ir_new = apply_optimization_rules(ir, state, rule)
-#         ir = ir_new
-#     end
-
-#     ir
-# end
-
 end # module SymbolicCompilerPasses

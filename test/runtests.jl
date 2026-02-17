@@ -5,6 +5,7 @@ using Pkg, Test, SafeTestsets
 	@safetestset "MatmulAdd Optimization" begin include("mul5_opt.jl") end
 	@safetestset "Literal Small Array Allocation" begin include("array_literal.jl") end
 	@safetestset "Ldiv Factorization Optimization" begin include("ldiv_opt.jl") end
+	@safetestset "Orthogonal Inverse Optimization" begin include("ortho_inv_opt.jl") end
 	@safetestset "Apply Multiple Rules" begin include("multiple.jl") end
 	
 	@safetestset "Vectorize Scalar Equations" begin include("scalar_to_vec.jl") end

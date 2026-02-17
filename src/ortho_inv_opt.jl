@@ -91,7 +91,7 @@ const ORTHO_INV_RULE = OptimizationRule(
 function ortho_inv_opt(expr, state::Code.CSEState)
 
     # Try to apply optimization rules
-    optimized = apply_optimization_rule(expr, state, ORTHO_INV_RULE)
+    optimized = apply_optimization_rules(expr, state, [ORTHO_INV_RULE])
     if optimized !== nothing
         return optimized
     end
