@@ -24,7 +24,7 @@ function has_ortho_opt(expr)
     false
 end
 
-function check_ortho_opt(expr, A, B; expected_ortho = false)
+function check_ortho_opt(expr, A, B; expected_ortho = true)
     current = SU.Code.cse(expr)
     toexpr(current)
 
