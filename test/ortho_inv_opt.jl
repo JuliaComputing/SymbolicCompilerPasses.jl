@@ -24,7 +24,7 @@ function has_ortho_opt(expr)
     false
 end
 
-function check_ortho_opt(expr, A, B)
+function check_ortho_opt(expr, A, B; expected_ortho = false)
     current = SU.Code.cse(expr)
     toexpr(current)
 
@@ -33,7 +33,7 @@ function check_ortho_opt(expr, A, B)
     # return optimized
     # return toexpr(optimized)
 
-    @test has_ortho_opt(optimized)
+    @test has_ortho_opt(optimized) == expected_ortho
 
     current_fun = Func([A, B], [], current)
     optimized_fun = Func([A, B], [], optimized)
@@ -55,7 +55,7 @@ function check_ortho_opt(expr, A, B)
 end
 
 
-# @testset "Orthogonal Matrices: inv -> transpose" begin
+@testset "Orthogonal Matrices: inv -> transpose" begin
     @syms A[1:3, 1:3] B[1:3, 1:3] C[1:3, 1:3] D[1:3, 1:3] E[1:3, 1:3]
     Ao = SU.setmetadata(A, SC.IsOrthogonal, true)
 
@@ -71,4 +71,4 @@ end
     
     expr4 = inv(Ao * B) + B
     check_ortho_opt(expr4, A, B)
-# end
+end
