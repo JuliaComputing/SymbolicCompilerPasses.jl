@@ -27,7 +27,6 @@ function detect_ldiv_pattern(expr::Code.Let, state)
         all_arrays || return false
 
         A, B = args
-        @show validate_ldiv_shapes(A, B)
         validate_ldiv_shapes(A, B)
     end
 
@@ -51,7 +50,6 @@ For A \\ B:
 - B must have n rows: (n, m) or (n,)
 """
 function validate_ldiv_shapes(A, B)
-    return true
     A_shape = shape(A)
     B_shape = shape(B)
 
