@@ -19,7 +19,7 @@ function get_linear_prob(A::TA, B::TB) where {TA, TB}
     get!(LINSOLVEPROB_CACHE, A) do
         prob = LinearSolve.LinearProblem(A, B)
         init(prob)
-    end::Base.promote_op(init, Tuple{Base.promote_op(LinearSolve.LinearProblem, Tuple{TA, TB})})
+    end# ::Base.promote_op(init, Tuple{Base.promote_op(LinearSolve.LinearProblem, Tuple{TA, TB})})
 end
 
 function linear_solve(A, B)
@@ -45,7 +45,7 @@ end
 
 function ldiv_transformation(safe_matches, ::Val{true})
     @info "Using LinearSolve.jl for in-place backsolve optimizations.
-    In order to opt-out of using LinearSolve, set SymbolicCompilerPasses.LINEARSOLVE_LIB[] = false." maxlog=Inf
+    In order to opt-out of using LinearSolve, set SymbolicCompilerPasses.LINEARSOLVE_LIB[] = false." maxlog=1
      # Build transformation
     transformations = Dict{Int, Code.Assignment}()
 
