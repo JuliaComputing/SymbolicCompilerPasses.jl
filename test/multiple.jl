@@ -6,6 +6,8 @@ using LinearAlgebra
 using Symbolics
 using Test
 
+using Rotations
+
 function test_codegen(expr, rules, args...)
     current = SU.Code.cse(expr)
     optimized = SU.Code.apply_optimization_rules(current, SU.Code.CSEState(), rules)
@@ -17,8 +19,13 @@ function test_codegen(expr, rules, args...)
     optimized_f = eval(toexpr(optimized_expr))
 
     N = 3
-    # test_args = collect(randn(N, N) for _ in 1:length(args))
-    test_args = [rand(size(x)...) for x in args]
+    test_args = map(args) do arg
+        if getmetadata(arg, SC.IsOrthogonal, false) == true
+            RotXYZ((rand([0,1]) for x in 1:size(arg, 1))...)
+        else
+            rand(size(arg)...)
+        end
+    end
 
     current_res = @invokelatest current_f(test_args...)
     optimized_res = @invokelatest optimized_f(test_args...)
@@ -28,7 +35,7 @@ end
 
 
 @testset "Combined Optimizations" begin
-    @syms A[1:3, 1:3] B[1:3, 1:2] C[1:3, 1:3] D[1:3, 1:2] E[1:2, 1:3] 
+    @syms A[1:3, 1:3] B[1:3, 1:3] C[1:3, 1:3] D[1:3, 1:3] E[1:3, 1:3] 
 
     P = A \ B
     expr = P + C * D
@@ -44,5 +51,5 @@ end
     P = A \ B
     # expr3 = P + C * inv(Ro)
     expr3 = tril(P) + C * inv(Ro)
-    test_codegen(expr3, [SC.LDIV_RULE, SC.MATMUL_ADD_RULE, SC.ORTHO_INV_RULE], A, B, C, R)
+    test_codegen(expr3, [SC.LDIV_RULE, SC.MATMUL_ADD_RULE, SC.ORTHO_INV_RULE], A, B, C, Ro)
 end
