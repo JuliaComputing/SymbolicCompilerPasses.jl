@@ -1,4 +1,4 @@
-const FACTORIZATION_CACHE = WeakKeyDict()
+const FACTORIZATION_CACHE = Dict()
 
 struct LdivMatch{Ta, Tb, S <: Assignment, P <: AbstractString} <: AbstractMatched
     A::Ta
@@ -149,6 +149,7 @@ function get_factorization(A)
     qr_A = get!(FACTORIZATION_CACHE, A) do 
         qr(A)
     end
+    # qr_A = qr(A)
 
     qr_A
 end
@@ -160,7 +161,7 @@ ldiv_transformation(x, ::Nothing) = ldiv_transformation(x, Val(false))
 function ldiv_transformation(safe_matches, ::Val{false})
     @warn "Backsolve may be sped up by adding LinearSolve.jl.
     In order to enable this optimization, add LinearSolve.jl to your environment.
-    To opt-out of using LinearSolve, set SymbolicCompilerPasses.LINEARSOLVE_LIB[] = false." maxlog=Inf
+    To opt-out of using LinearSolve, set SymbolicCompilerPasses.LINEARSOLVE_LIB[] = false." maxlog=1
 
     # Build transformation
     transformations = Dict{Int, Code.Assignment}()

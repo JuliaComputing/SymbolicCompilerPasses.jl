@@ -4,14 +4,34 @@ using SymbolicUtils
 using SymbolicUtils.Code
 using LinearSolve
 using LinearAlgebra
-import SymbolicCompilerPasses: ldiv_transformation, SymbolicCompilerPasses, get_factorization, get_from_cache, FACTORIZATION_CACHE, LINEARSOLVE_LIB
+import SymbolicCompilerPasses: ldiv_transformation, SymbolicCompilerPasses, get_factorization, get_from_cache, FACTORIZATION_CACHE
+using StaticArrays
 
 __init__() = SymbolicCompilerPasses.LINEARSOLVE_LIB[] = true
 
+const LINSOLVEPROB_CACHE = Dict()
+
+function get_linear_prob(A::StaticArray, B::StaticArray)
+    prob = LinearSolve.LinearProblem(A, B)
+end
+
+function get_linear_prob(A::TA, B::TB) where {TA, TB}
+    get!(LINSOLVEPROB_CACHE, A) do
+        prob = LinearSolve.LinearProblem(A, B)
+        init(prob)
+    end# ::Base.promote_op(init, Tuple{Base.promote_op(LinearSolve.LinearProblem, Tuple{TA, TB})})
+end
+
 function linear_solve(A, B)
-    linsolve = get_factorization(A, B)
+    linsolve = get_linear_prob(A, B)
     linsolve.b = B
     sol = solve!(linsolve)
+    return sol.u
+end
+
+function linear_solve(A::StaticArray, B::StaticArray)
+    linsolve = get_linear_prob(A, B)
+    sol = solve(linsolve)
     return sol.u
 end
 
@@ -25,7 +45,7 @@ end
 
 function ldiv_transformation(safe_matches, ::Val{true})
     @info "Using LinearSolve.jl for in-place backsolve optimizations.
-    In order to opt-out of using LinearSolve, set SymbolicCompilerPasses.LINEARSOLVE_LIB[] = false." maxlog=Inf
+    In order to opt-out of using LinearSolve, set SymbolicCompilerPasses.LINEARSOLVE_LIB[] = false." maxlog=1
      # Build transformation
     transformations = Dict{Int, Code.Assignment}()
 
