@@ -24,23 +24,25 @@ function find_static(expr)
 end
 
 @testset "Literal Small Array Allocation" begin
-    @syms myx_vec[1:3]
+    @syms myx_vec[1:3] myx_vec2[1:3]
     literal_vec_expr = Func([myx_vec[1], myx_vec[2], myx_vec[3]], [],
-                Let([Assignment(myx_vec, SU.Const{SymReal}([myx_vec[1], myx_vec[2], myx_vec[3]]))], sum(myx_vec), false)
+                Let([Assignment(myx_vec2, SU.Const{SymReal}([myx_vec[1], myx_vec[2], myx_vec[3]]))], sum(myx_vec2), false)
             )
     literal_vec_f = eval(toexpr(literal_vec_expr))
 
 
     static_vec_expr_ = SU.Code.cse(literal_vec_expr.body)
-    static_vec_expr = SC.literal_static_opt(static_vec_expr_, SU.Code.CSEState())
+    static_vec_expr = SC.literal_static_opt(static_vec_expr_, SU.Code.CSEState());
     @test find_static(static_vec_expr)
-    static_vec_expr = Func([myx_vec[1], myx_vec[2], myx_vec[3]], [], static_vec_expr)
+    static_vec_expr = Func([myx_vec[1], myx_vec[2], myx_vec[3]], [], static_vec_expr);
     static_vec_f = eval(toexpr(static_vec_expr))
 
     r = rand(3)
+    literal_vec_f(r...)
+    static_vec_f(r...)
     literal_vec_alloc = @allocated literal_vec_f(r...)
-    # static_vec_alloc = @allocated static_vec_f(r...)
-    # @test static_vec_alloc < literal_vec_alloc
+    static_vec_alloc = @allocated static_vec_f(r...)
+    @test static_vec_alloc < literal_vec_alloc
 
     @syms myx[1:2, 1:2]
     literal_mat_expr = Func([myx[1, 1], myx[2, 1], myx[1, 2], myx[2, 2]], [],
@@ -74,7 +76,18 @@ end
                     Let([
                         Assignment(
                             myx,
-                            [myx[1, 1] myx[2, 1]; myx[1, 2] myx[2, 2]; myx[1, 1] myx[2, 1]; myx[1, 2] myx[2, 2]; myx[1, 1] myx[2, 1]; myx[1, 2] myx[2, 2]; myx[1, 1] myx[2, 1]; myx[1, 2] myx[2, 2]; myx[1, 1] myx[2, 1]; myx[1, 2] myx[2, 2]; myx[1, 1] myx[2, 1]; myx[1, 2] myx[2, 2]]),
+                            [myx[1, 1] myx[2, 1];
+                            myx[1, 2] myx[2, 2];
+                            myx[1, 1] myx[2, 1];
+                            myx[1, 2] myx[2, 2];
+                            myx[1, 1] myx[2, 1];
+                            myx[1, 2] myx[2, 2];
+                            myx[1, 1] myx[2, 1];
+                            myx[1, 2] myx[2, 2];
+                            myx[1, 1] myx[2, 1];
+                            myx[1, 2] myx[2, 2];
+                            myx[1, 1] myx[2, 1];
+                            myx[1, 2] myx[2, 2]]),
                         ], sum(myx), false)
                 )
 
