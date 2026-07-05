@@ -17,7 +17,7 @@ SCPLinearSolveExt = ["LinearSolve"]
 
 [compat]
 LinearAlgebra = "1"
-LinearSolve = "3.53.0"
+LinearSolve = "3.53.0, 4"
 PreallocationTools = "0.4.34, 1"
 StaticArrays = "1.9.15, 1"
 SymbolicUtils = "4.1.0"
